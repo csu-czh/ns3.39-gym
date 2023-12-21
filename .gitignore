@@ -1,0 +1,8 @@
+# Ignore everything
+*
+
+# But not these directories...
+!ns-3.39/contrib/
+!ns-3.39/scratch/
+!README.md
+!.gitignore

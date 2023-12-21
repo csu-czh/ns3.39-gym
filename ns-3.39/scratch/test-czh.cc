@@ -30,9 +30,9 @@ int main(int argc, char* argv[]) {
     int flowNum;
 
     cmd.Parse(argc, argv);
-	topof.open("/home/chenzihao/workspace/ns3/ns-allinone-3.39/ns-3.39/scratch/config/topology-czh.txt");
+	topof.open("/home/chenzihao/workspace/ns3.39-gym/ns-3.39/scratch/config/topology-czh.txt");
     topof>>nodeNum>>linkNum;
-    flowf.open("/home/chenzihao/workspace/ns3/ns-allinone-3.39/ns-3.39/scratch/config/flow.txt");
+    flowf.open("/home/chenzihao/workspace/ns3.39-gym/ns-3.39/scratch/config/flow.txt");
     flowf>>flowNum;
     nodes.Create (nodeNum);
     Ipv4GlobalRoutingHelper globalRouting;

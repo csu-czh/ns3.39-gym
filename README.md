@@ -34,4 +34,7 @@ $ ./ns3 build
 $ ./test.py
 ```
 ## Run
+
+```
 $ ./ns3 run first
+```

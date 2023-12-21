@@ -12,7 +12,7 @@
 #include <string>
 
 using namespace ns3;
-
+ 
 NS_LOG_COMPONENT_DEFINE("StaticRoutingSlash32Test");
 
 int

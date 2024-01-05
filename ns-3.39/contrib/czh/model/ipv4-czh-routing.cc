@@ -466,34 +466,25 @@ Ipv4CzhRouting::RemoveRoute(uint32_t index)
     NS_ASSERT(false);
 }
 
-Ptr<Ipv4Route>
+Ptr<Ipv4Route>  // 数据包从主机发出，因此直接发送到交换机
 Ipv4CzhRouting::RouteOutput(Ptr<Packet> p,
                                const Ipv4Header& header,
                                Ptr<NetDevice> oif,
                                Socket::SocketErrno& sockerr)
 {
-    // std::cout<<"RouteOutput "<<std::endl;
-    UdpHeader udpHeader;
-    p->PeekHeader(udpHeader);
-    //czh 表示为ack数据包，走global router
-    if(p->GetSize()<200)return nullptr;
     NS_LOG_FUNCTION(this << p << header << oif << sockerr);
+    
     Ipv4Address destination = header.GetDestination();
     // 直接发送到对方面节点，因为主机就一个网卡
     Ptr<Ipv4Route> rtentry = Create<Ipv4Route>();
     rtentry->SetDestination(destination);
     rtentry->SetOutputDevice(m_ipv4->GetNetDevice(1));
-    // std::cout<<m_ipv4->GetNetDevice(1)->GetAddress()<<std::endl;
-    rtentry->SetSource(m_ipv4->GetAddress(1,0).GetLocal() );
-    // std::cout<<"Ipv4CzhRouting::RouteOutput"<<std::endl;
-    // std::cout<<m_ipv4->GetAddress(1,0).GetLocal()<<std::endl;
-    // std::cout<<m_ipv4->GetNetDevice(1)->GetAddress()<<std::endl;
-    // std::cout<<m_ipv4->GetAddress(1,0).GetLocal().Get()<<std::endl;
-    rtentry->SetGateway(getPeerAddress(m_ipv4->GetAddress(1,0).GetLocal()));
+    rtentry->SetSource(m_ipv4->GetAddress(1,0).GetLocal());
+    rtentry->SetGateway(Ipv4Address("0.0.0.0"));
     return rtentry;
 }
 
-bool
+bool // 数据包从其他节点到达了当前主机
 Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                               const Ipv4Header& ipHeader,
                               Ptr<const NetDevice> idev,
@@ -502,105 +493,62 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                               const LocalDeliverCallback& lcb,
                               const ErrorCallback& ecb)
 {
+    //czh 表示为ack数据包，走global router
+    if(p->GetSize()<200)return false;
+
+    // Check if input device supports IP
+    NS_ASSERT(m_ipv4);
+    NS_ASSERT(m_ipv4->GetInterfaceForDevice(idev) >= 0);
+    
     // Ptr<OutputStreamWrapper> stream = Create<OutputStreamWrapper>(&std::cout);
     //  std::cout<<"RouteOutput "<<std::endl;
     // p->Print(std::cout);
+
     // 获取端口号
     UdpHeader udpHeader;
     p->PeekHeader(udpHeader);
     int port = udpHeader.GetDestinationPort();
     // std::cout<<"SourcePort: "<<udpHeader.GetDestinationPort()<<std::endl;
-   
-    //czh 表示为ack数据包，走global router
-    if(p->GetSize()<200)return false;
-    NS_LOG_FUNCTION(this << p << ipHeader << ipHeader.GetSource() << ipHeader.GetDestination()
-                         << idev << &ucb << &mcb << &lcb << &ecb);
-
-    NS_ASSERT(m_ipv4);
-    // Check if input device supports IP
-    NS_ASSERT(m_ipv4->GetInterfaceForDevice(idev) >= 0);
-    uint32_t iif = m_ipv4->GetInterfaceForDevice(idev);
-
-    // Multicast recognition; handle local delivery here
-
-    if (ipHeader.GetDestination().IsMulticast())
-    {
-        NS_LOG_LOGIC("Multicast destination");
-        Ptr<Ipv4MulticastRoute> mrtentry = LookupStatic(ipHeader.GetSource(),
-                                                        ipHeader.GetDestination(),
-                                                        m_ipv4->GetInterfaceForDevice(idev));
-        if (mrtentry)
-        {
-            NS_LOG_LOGIC("Multicast route found");
-             mcb(mrtentry, p, ipHeader); // multicast forwarding callback
-            return true;
-        }
-        else
-        {
-            NS_LOG_LOGIC("Multicast route not found");
-            return false; // Let other routing protocols try to handle this
-        }
-    }
-
-    if (m_ipv4->IsDestinationAddress(ipHeader.GetDestination(), iif))
-    {
-        if (!lcb.IsNull())
-        {
-            NS_LOG_LOGIC("Local delivery to " << ipHeader.GetDestination());
-            lcb(p, ipHeader, iif);
-            return true;
-        }
-        else
-        {
-            // The local delivery callback is null.  This may be a multicast
-            // or broadcast packet, so return false so that another
-            // multicast routing protocol can handle it.  It should be possible
-            // to extend this to explicitly check whether it is a unicast
-            // packet, and invoke the error callback if so
-            return false;
-        }
-    }
-
-    // Check if input device supports IP forwarding
-    if (!m_ipv4->IsForwarding(iif))
-    {
-        NS_LOG_LOGIC("Forwarding disabled for this interface");
-        ecb(p, ipHeader, Socket::ERROR_NOROUTETOHOST);
-        return true;
-    }
+    
     // czh 
     // Next, try to find a route
     // 获取到输入端口的ipv4地址
     Ipv4Address inputAddress = m_ipv4->GetAddress(m_ipv4->GetInterfaceForDevice(idev), 0).GetLocal();
     int32_t interface = m_ipv4->GetInterfaceForDevice(idev);
     int nodeId = idev->GetNode()->GetId();
-     if (!lcb.IsNull() && session->receivers[port-1001].find(nodeId) != session->receivers[port-1001].end())
+
+    //到达了主机
+    if (!lcb.IsNull() && session->receivers[port-1001].find(nodeId) != session->receivers[port-1001].end())
     {
         NS_LOG_LOGIC("Local delivery to " << ipHeader.GetDestination());
-        lcb(p, ipHeader, iif);
+        lcb(p, ipHeader, interface);
         return true;
-    }
-    // std::cout<<"nodeId "<<nodeId<<std::endl;
+    }else{
+        bool isForwarding = false;
+        // std::cout<<"nodeId "<<nodeId<<std::endl;
     // std::cout<<"_ipv4->GetNInterfaces() "<<m_ipv4->GetNInterfaces()<<std::endl;
-    for(int i=1;i<m_ipv4->GetNInterfaces();i++){
-        // std::cout<<nodeId<<" "<<i-1<<std::endl;
-        if(session->m_links[port-1001].find(make_pair(nodeId,i-1)) ==  session->m_links[port-1001].end()) continue;
-        // std::cout<<"send "<<nodeId<<" "<<i<<std::endl;
-        int32_t outInterface = i;
-        Ipv4Address outAddress = m_ipv4->GetAddress(outInterface, 0).GetLocal();
-        // std::cout<<"inputInterface "<< interface<<std::endl;
-        // std::cout<<"inputAddress " << inputAddress <<std::endl;
-        // std::cout<<"outInterface "<< outInterface<<std::endl;
-        // std::cout<<"outAddress " << outAddress <<std::endl;
-        Ptr<Ipv4Route> rtentry = Create<Ipv4Route>();
-        rtentry->SetGateway(getPeerAddress(outAddress));
-        rtentry->SetOutputDevice(m_ipv4->GetNetDevice(outInterface));
-        rtentry->SetDestination(ipHeader.GetDestination() );
-        rtentry->SetSource(m_ipv4->GetAddress(interface, 0).GetLocal());
-        ucb(rtentry, p, ipHeader); // unicast forwarding callback
+        for(int i=1; i<m_ipv4->GetNInterfaces(); i++){
+            // std::cout<<nodeId<<" "<<i-1<<std::endl;
+            if(session->m_links[port-1001].find(make_pair(nodeId, i-1)) !=  session->m_links[port-1001].end()){
+                // std::cout<<"send "<<nodeId<<" "<<i<<std::endl;
+                int32_t outInterface = i;
+                Ipv4Address outAddress = m_ipv4->GetAddress(outInterface, 0).GetLocal();
+                // std::cout<<"inputInterface "<< interface<<std::endl;
+                // std::cout<<"inputAddress " << inputAddress <<std::endl;
+                // std::cout<<"outInterface "<< outInterface<<std::endl;
+                // std::cout<<"outAddress " << outAddress <<std::endl;
+                Ptr<Ipv4Route> rtentry = Create<Ipv4Route>();
+                rtentry->SetGateway(Ipv4Address("0.0.0.0"));
+                rtentry->SetOutputDevice(m_ipv4->GetNetDevice(outInterface));
+                rtentry->SetDestination(ipHeader.GetDestination());
+                rtentry->SetSource(m_ipv4->GetAddress(interface, 0).GetLocal());
+                ucb(rtentry, p, ipHeader); // unicast forwarding callback
+                isForwarding = true;
+            } 
+        }
+        // std::cout<<idev->GetNode()->GetId()<<std::endl;
+        return isForwarding;
     }
-    // std::cout<<idev->GetNode()->GetId()<<std::endl;
-    return true;
 }
 
 Ipv4CzhRouting::~Ipv4CzhRouting()

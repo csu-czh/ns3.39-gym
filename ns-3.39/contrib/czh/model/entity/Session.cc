@@ -61,7 +61,7 @@ namespace ns3
             }
             visited[index] = 1; // 找到当前距离原点最小值的点，则把点进行标记踢出。
             Mnode *nowNode = topolopy->nodes[index];
-            for (int j = 0; j < nowNode->linkedNodes.size(); j++)
+            for (u_int32_t j = 0; j < nowNode->linkedNodes.size(); j++)
             {
                 int to = nowNode->linkedNodes[j]->id;
                 if (dist[index] + 1 < dist[to])
@@ -74,7 +74,7 @@ namespace ns3
 
     void Session::addNewSession(int port,int src, std::vector<int>dst){
         int n = topolopy->nodes.size();
-        for(int i =0;i<dst.size();i++){
+        for(u_int32_t i =0;i<dst.size();i++){
             // std::cout<<dst[i]<<" "; 
             receivers[port-1001].insert(dst[i]);
         }
@@ -86,13 +86,9 @@ namespace ns3
             isPostiveNode[i] = 0;
         }
         dijkstra(src, distance, topolopy);
-        // for(int i=0;i<n;i++){
-        //     std::cout<<distance[i]<<" ";
-        // }
-        std::cout<<distance[205]<<" "<<distance[0]<<" "<<distance[79]<<" "<<distance[6]<<std::endl;
-        std::cout<<std::endl;
+   
         std::queue<Mnode *> q;
-        for (int i=0;i<dst.size();i++)
+        for (u_int32_t i=0;i<dst.size();i++)
         {
             Mnode *start = topolopy->nodes[dst[i]];
             q.push(start);
@@ -106,14 +102,14 @@ namespace ns3
             if (now->id == src)
                 continue;
             int tmp = rand();
-            for (int j = 0; j < now->linkedNodes.size(); j++)
+            for (u_int32_t j = 0; j < now->linkedNodes.size(); j++)
             {
                 // int x = j;
                 int x = (j + tmp)% (now->linkedNodes.size());
                 int to = now->linkedNodes[x]->id;
                 if (distance[now->id] == distance[to] + 1)
                 {
-                    for(int k=0;k<topolopy->nodes[to]->linkedNodes.size();k++){
+                    for(u_int32_t k=0; k<topolopy->nodes[to]->linkedNodes.size(); k++){
                         if(topolopy->nodes[to]->linkedNodes[k]->id == now->id){
                             // std::cout<<"link : "<<now->id<<" "<<to<<std::endl;
                             m_links[port-1001].insert(std::make_pair(to, k));

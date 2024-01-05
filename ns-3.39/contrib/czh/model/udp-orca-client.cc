@@ -31,7 +31,6 @@
 #include "ns3/socket-factory.h"
 #include "ns3/socket.h"
 #include "ns3/uinteger.h"
-
 #include <cstdio>
 #include <cstdlib>
 
@@ -147,8 +146,7 @@ UdpOrcaClient::StartApplication()
             {
                 NS_FATAL_ERROR("Failed to bind socket");
             }
-            m_socket->Connect(
-                InetSocketAddress(Ipv4Address::ConvertFrom(m_peerAddress), m_peerPort));
+            m_socket->Connect(InetSocketAddress(Ipv4Address::ConvertFrom(m_peerAddress), m_peerPort));
         }
         else if (Ipv6Address::IsMatchingType(m_peerAddress))
         {
@@ -218,7 +216,6 @@ UdpOrcaClient::StopApplication()
 void
 UdpOrcaClient::Send()
 {
-    
     NS_LOG_FUNCTION(this);
     NS_ASSERT(m_sendEvent.IsExpired());
     // std::cout<<"Send"<<m_flight_size<<" "<<m_window_size<<std::endl;
@@ -236,8 +233,6 @@ UdpOrcaClient::Send()
         // Trace before adding header, for consistency with PacketSink
         m_txTrace(p);
         m_txTraceWithAddresses(p, from, to);
-
-        p->AddHeader(seqTs);
 
         if ((m_socket->Send(p)) >= 0)
         {

@@ -15,7 +15,7 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("test");
+NS_LOG_COMPONENT_DEFINE("test-orca");
 
 int main(int argc, char* argv[]) {
     std::ifstream topof, flowf;

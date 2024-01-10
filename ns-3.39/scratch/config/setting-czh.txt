@@ -1,0 +1,5 @@
+FLOW_FILE   ./scratch/config/flow.txt
+TOPOLOGY_FILE   ./scratch/config/topology-czh.txt
+MAX_QUEUE_LEN    30000p
+DATA_RATE    1Gbps
+DELAY   1us

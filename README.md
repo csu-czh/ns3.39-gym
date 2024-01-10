@@ -38,3 +38,5 @@ $ ./test.py
 ```
 $ ./ns3 run first
 ```
+
+The session maintains all multicast states, and the routing incorporates a reference point that represents the session (though not a true simulation).

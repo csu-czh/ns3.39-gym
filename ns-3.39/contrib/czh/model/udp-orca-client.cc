@@ -234,25 +234,19 @@ UdpOrcaClient::Send()
         m_txTrace(p);
         m_txTraceWithAddresses(p, from, to);
 
+        p->AddHeader(seqTs);
+
         if ((m_socket->Send(p)) >= 0)
         {
             m_flight_size++;
             ++m_sent;
             m_totalTx += p->GetSize();
-    #ifdef NS3_LOG_ENABLE
-            NS_LOG_INFO("TraceDelay TX " << m_size << " bytes to " << m_peerAddressString << " Uid: "
-                                        << p->GetUid() << " Time: " << (Simulator::Now()).As(Time::S));
-    #endif // NS3_LOG_ENABLE
+            // std::cout<< p->GetSize() << std::endl;
         }
-    #ifdef NS3_LOG_ENABLE
-        else
-        {
-            NS_LOG_INFO("Error while sending " << m_size << " bytes to " << m_peerAddressString);
-        }
-    #endif // NS3_LOG_ENABLE
+
         if(m_sent == 1){
             int64_t currentTimeNanoSeconds = ns3::Simulator::Now().GetNanoSeconds();
-            std::cout<<"czh start flow id = "<<m_peerPort-1000<<" "<<currentTimeNanoSeconds<<std::endl;
+            std::cout<<"czh start flow id = "<< m_peerPort-1000 <<" "<<currentTimeNanoSeconds<<std::endl;
         }
     }
 

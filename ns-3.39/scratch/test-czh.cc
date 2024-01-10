@@ -13,10 +13,30 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <map>
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("test");
+NS_LOG_COMPONENT_DEFINE("test-czh");
+
+std::map<std::string, std::string> read_config(std::string config_path) {
+    std::ifstream config_file(config_path); // 打开文件
+    std::map<std::string, std::string> config_values; // 存储配置项的字典
+    std::string key;
+    std::string value;
+
+    std::cout<< "config_path" << "\t\t\t" << config_path << std::endl;
+    if (config_file.is_open()) {
+        while (config_file >> key >> value) { // 读取每行的键和值
+            config_values[key] = value;
+            std::cout<< key << "\t\t\t" << value<< std::endl;
+        }
+        config_file.close(); // 关闭文件
+    } else {
+        std::cout << "Unable to open file" << std::endl;
+    }
+    return config_values;
+}
 
 int main(int argc, char* argv[])
 {
@@ -25,45 +45,51 @@ int main(int argc, char* argv[])
     InternetStackHelper internet;
     Ipv4CzhRoutingHelper ipv4CzhRoutingHelper;
     CommandLine cmd(__FILE__);
-    
+    std::map<std::string, std::string> config_values;
+    Ipv4GlobalRoutingHelper globalRouting;
+    Ipv4ListRoutingHelper listRouting;
+    PointToPointHelper p2p;
+    Ipv4AddressHelper ipv4;
+    Topolopy* topolopy = new Topolopy();
+    Session* session = new Session();
+
     int nodeNum;
     int linkNum;
     int flowNum;
-
+    
     cmd.Parse(argc, argv);
-    topof.open("./scratch/config/topology-czh.txt");
+    config_values = read_config("./scratch/config/setting-czh.txt");
+    topof.open(config_values["TOPOLOGY_FILE"]);
     topof >> nodeNum >> linkNum;
-    flowf.open("./scratch/config/flow.txt");
+    flowf.open(config_values["FLOW_FILE"]);
     flowf >> flowNum;
     nodes.Create(nodeNum);
-
-    Ipv4GlobalRoutingHelper globalRouting;
-    Ipv4ListRoutingHelper listRouting;
+    
     listRouting.Add(ipv4CzhRoutingHelper, 1);
     listRouting.Add(globalRouting, 0);
     internet.SetRoutingHelper(listRouting);
     internet.Install(nodes);
     
-    PointToPointHelper p2p;
-    Ipv4AddressHelper ipv4;
-    Topolopy* topolopy = new Topolopy();
-    Session* session = new Session();
     session->topolopy = topolopy;
-
-    for (int i = 0; i < nodeNum; i++)
-    {
+    for (int i = 0; i < nodeNum; i++){
+        Ptr<Ipv4> ipv4 = nodes.Get(i)->GetObject<Ipv4>();
+        ns3::Ptr<ns3::Ipv4CzhRouting> routing = ipv4CzhRoutingHelper.GetCzhRouting(ipv4);
+        routing->topolopy = topolopy;
+        routing->session = session;
+    }
+    
+    for (int i = 0; i < nodeNum; i++){
         Mnode* node = new Mnode();
         node->id = i;
         topolopy->nodes.push_back(node);
     }
 
-    for (int i = 0; i < linkNum; i++)
-    {
+    for (int i = 0; i < linkNum; i++){
         int a, b;
-        p2p.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
-        p2p.SetChannelAttribute("Delay", StringValue("1us"));
+        p2p.SetDeviceAttribute("DataRate", StringValue(config_values["DATA_RATE"]));
+        p2p.SetChannelAttribute("Delay", StringValue(config_values["DELAY"]));
         // 设置队列属性
-        p2p.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue("30000p"));
+        p2p.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue(config_values["MAX_QUEUE_LEN"]));
         topof >> a >> b;
         topolopy->nodes[a - 1]->linkedNodes.push_back(topolopy->nodes[b - 1]);
         topolopy->nodes[b - 1]->linkedNodes.push_back(topolopy->nodes[a - 1]);
@@ -76,16 +102,7 @@ int main(int argc, char* argv[])
 
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
-    for (int i = 0; i < nodeNum; i++)
-    {
-        Ptr<Ipv4> ipv4 = nodes.Get(i)->GetObject<Ipv4>();
-        ns3::Ptr<ns3::Ipv4CzhRouting> routing = ipv4CzhRoutingHelper.GetCzhRouting(ipv4);
-        routing->topolopy = topolopy;
-        routing->session = session;
-    }
-
-    for (int i = 0; i < flowNum; i++)
-    {
+    for (int i = 0; i < flowNum; i++){
         std::vector<int> dsts;
         int src, dstNum, maxPacketCount;
         double start_time, stop_time;
@@ -93,13 +110,10 @@ int main(int argc, char* argv[])
         flowf >> src >> dstNum >> start_time >> stop_time >> maxPacketCount;
         Ptr<Ipv4> ipv4 = nodes.Get(src - 1)->GetObject<Ipv4>();
         ns3::Ptr<ns3::Ipv4CzhRouting> routing = ipv4CzhRoutingHelper.GetCzhRouting(ipv4);
-        // std::cout<<"routing"  <<ns3::Ipv4CzhRouting::topolopy.pod<<std::endl;
-        // routing->topolopy;
-        Ipv4Address clientAddress =
-            ipv4->GetAddress(1, 0).GetLocal(); // GetAddress(0,0) is the loopback 127.0.0.1
+        Ipv4Address clientAddress = ipv4->GetAddress(1, 0).GetLocal(); // GetAddress(0,0) is the loopback 127.0.0.1
         ApplicationContainer apps;
         Ipv4Address serverAddress;
-        UdpOrcaClientHelper client(Ipv4Address("0.0.0.0"), port);
+        UdpOrcaClientHelper client(Ipv4Address("0.0.0.0"), port); // multicast address
         client.SetAttribute("MaxPackets", UintegerValue(maxPacketCount));
         client.SetAttribute("Interval", TimeValue(NanoSeconds(100)));
         client.SetAttribute("PacketSize", UintegerValue(1224));
@@ -107,14 +121,12 @@ int main(int argc, char* argv[])
         apps.Start(Seconds(start_time));
         apps.Stop(Seconds(stop_time));
 
-        for (int j = 0; j < dstNum; j++)
-        {
+        for (int j = 0; j < dstNum; j++){
             int dst;
             flowf >> dst;
             dsts.push_back(dst - 1);
             Ptr<Ipv4> ipv4 = nodes.Get(dst - 1)->GetObject<Ipv4>();
-            serverAddress =
-                ipv4->GetAddress(1, 0).GetLocal(); // GetAddress(0,0) is the loopback 127.0.0.1
+            serverAddress = ipv4->GetAddress(1, 0).GetLocal(); // GetAddress(0,0) is the loopback 127.0.0.1
             UdpOrcaServerHelper server(clientAddress, port);
             apps = server.Install(nodes.Get(dst - 1));
             apps.Start(Seconds(start_time));

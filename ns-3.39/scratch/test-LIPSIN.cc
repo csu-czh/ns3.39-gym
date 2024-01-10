@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
     internet.Install(nodes);
     
     session->topolopy = topolopy;
-    session->multicastProtocol = "RSBF";
+    session->multicastProtocol = "LIPSIN";
     for (int i = 0; i < nodeNum; i++){
         Ptr<Ipv4> ipv4 = nodes.Get(i)->GetObject<Ipv4>();
         ns3::Ptr<ns3::Ipv4CzhRouting> routing = ipv4CzhRoutingHelper.GetCzhRouting(ipv4);

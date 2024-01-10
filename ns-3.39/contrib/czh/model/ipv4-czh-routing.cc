@@ -493,9 +493,9 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                               const LocalDeliverCallback& lcb,
                               const ErrorCallback& ecb)
 {
+    
     //czh 表示为ack数据包，走global router
     if(p->GetSize()<200)return false;
-
     // Check if input device supports IP
     NS_ASSERT(m_ipv4);
     NS_ASSERT(m_ipv4->GetInterfaceForDevice(idev) >= 0);
@@ -508,6 +508,7 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
     UdpHeader udpHeader;
     p->PeekHeader(udpHeader);
     int port = udpHeader.GetDestinationPort();
+    int flowId = port - 1001;
     // std::cout<<"SourcePort: "<<udpHeader.GetDestinationPort()<<std::endl;
     
     // czh 
@@ -517,19 +518,22 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
     int32_t interface = m_ipv4->GetInterfaceForDevice(idev);
     int nodeId = idev->GetNode()->GetId();
 
+    std::cout<<"node : " << nodeId << " receiver a packet "<< std::endl;
+
     //到达了主机
-    if (!lcb.IsNull() && session->receivers[port-1001].find(nodeId) != session->receivers[port-1001].end())
+    if (!lcb.IsNull() && session->receivers[flowId].find(nodeId) != session->receivers[flowId].end())
     {
         NS_LOG_LOGIC("Local delivery to " << ipHeader.GetDestination());
         lcb(p, ipHeader, interface);
         return true;
+
     }else{
         bool isForwarding = false;
         // std::cout<<"nodeId "<<nodeId<<std::endl;
     // std::cout<<"_ipv4->GetNInterfaces() "<<m_ipv4->GetNInterfaces()<<std::endl;
-        for(int i=1; i<m_ipv4->GetNInterfaces(); i++){
+        for(int i=1; i < m_ipv4->GetNInterfaces(); i++){
             // std::cout<<nodeId<<" "<<i-1<<std::endl;
-            if(session->m_links[port-1001].find(make_pair(nodeId, i-1)) !=  session->m_links[port-1001].end()){
+            if(session->m_links[flowId].find(make_pair(nodeId, i-1)) !=  session->m_links[flowId].end()){
                 // std::cout<<"send "<<nodeId<<" "<<i<<std::endl;
                 int32_t outInterface = i;
                 Ipv4Address outAddress = m_ipv4->GetAddress(outInterface, 0).GetLocal();

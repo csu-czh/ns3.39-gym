@@ -73,10 +73,13 @@ namespace ns3
     }
 
     void Session::addNewSession(int port,int src, std::vector<int>dst){
+        int flowId = port - 1001;
+        receivers.push_back(std::set<int>());
+        m_links.push_back( std::set< PairII >());
         int n = topolopy->nodes.size();
         for(u_int32_t i =0;i<dst.size();i++){
             // std::cout<<dst[i]<<" "; 
-            receivers[port-1001].insert(dst[i]);
+            receivers[flowId].insert(dst[i]);
         }
         // std::cout<<std::endl;
         // 通过Dijkstra算法计算出sender到所有节点的最短距离
@@ -96,7 +99,7 @@ namespace ns3
         }
         while (!q.empty())
         {
-            Mnode *now = q.front();
+            Mnode * now = q.front();
             q.pop();
             // std::cout<<"now->id: "<<now->id<<std::endl;
             if (now->id == src)
@@ -112,7 +115,7 @@ namespace ns3
                     for(u_int32_t k=0; k<topolopy->nodes[to]->linkedNodes.size(); k++){
                         if(topolopy->nodes[to]->linkedNodes[k]->id == now->id){
                             // std::cout<<"link : "<<now->id<<" "<<to<<std::endl;
-                            m_links[port-1001].insert(std::make_pair(to, k));
+                            m_links[flowId].insert(std::make_pair(to, k));
                         }
                     }
 
@@ -127,4 +130,7 @@ namespace ns3
         }
         // std::cout<<"end"<<std::endl;
     };
+    bool isPostiveNode(){
+        return true;
+    }
 }

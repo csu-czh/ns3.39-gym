@@ -21,4 +21,6 @@
 #define RECEIVE_PARTION 0.4
 #define BF_SIZE 500
 #define FATTREE_POD 10
+typedef std::pair<int,int> PairII;
+
 #endif

@@ -509,6 +509,7 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
     p->PeekHeader(udpHeader);
     int port = udpHeader.GetDestinationPort();
     int flowId = port - 1001;
+    
     // std::cout<<"SourcePort: "<<udpHeader.GetDestinationPort()<<std::endl;
     
     // czh 
@@ -518,22 +519,37 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
     int32_t interface = m_ipv4->GetInterfaceForDevice(idev);
     int nodeId = idev->GetNode()->GetId();
 
-    std::cout<<"node : " << nodeId << " receiver a packet "<< std::endl;
-
+    std::cout<<"flowId "<< flowId <<"node : " << nodeId << " receiver a packet "<< std::endl;
     //到达了主机
-    if (!lcb.IsNull() && session->receivers[flowId].find(nodeId) != session->receivers[flowId].end())
+    if (!lcb.IsNull() && (*sessions)[flowId].receivers.find(nodeId) != (*sessions)[flowId].receivers.end() )
     {
         NS_LOG_LOGIC("Local delivery to " << ipHeader.GetDestination());
         lcb(p, ipHeader, interface);
         return true;
-
     }else{
         bool isForwarding = false;
         // std::cout<<"nodeId "<<nodeId<<std::endl;
-    // std::cout<<"_ipv4->GetNInterfaces() "<<m_ipv4->GetNInterfaces()<<std::endl;
+        // std::cout<<"_ipv4->GetNInterfaces() "<<m_ipv4->GetNInterfaces()<<std::endl;
         for(int i=1; i < m_ipv4->GetNInterfaces(); i++){
+            bool isForwardInterface = 0;
+            std::string multicastProtocol  = (*sessions)[flowId].mpacket->multicastProtocol;
+            if(multicastProtocol.compare("Yeti") == 0 ){
+                if((*sessions)[flowId].m_links.find(make_pair(nodeId, i-1)) !=  (*sessions)[flowId].m_links.end()){
+                    isForwardInterface = 1;
+                }
+            }else if(multicastProtocol.compare("RSBF") == 0 ){
+                if((*sessions)[flowId].mpacket->doForwardRSBF(nodeId, i-1, topolopy, &((*sessions)[flowId]) )){
+                    isForwardInterface = 1;
+                }else{
+                    isForwardInterface = 0;
+                }
+            }else if(multicastProtocol.compare("Elmo") == 0){
+
+            }else if(multicastProtocol.compare("LIPSIN") == 0){
+                
+            }
             // std::cout<<nodeId<<" "<<i-1<<std::endl;
-            if(session->m_links[flowId].find(make_pair(nodeId, i-1)) !=  session->m_links[flowId].end()){
+            if(isForwardInterface){
                 // std::cout<<"send "<<nodeId<<" "<<i<<std::endl;
                 int32_t outInterface = i;
                 Ipv4Address outAddress = m_ipv4->GetAddress(outInterface, 0).GetLocal();
@@ -759,4 +775,8 @@ Ipv4CzhRouting::getPeerAddress(Ipv4Address address){
     }
 };
 
+void Ipv4CzhRouting::addNewSession(int port, int src, std::vector<int> dst){
+    Session session = Session(src, dst, topolopy);
+    (*sessions)[port - 1001] = session;
+}
 } // namespace ns3

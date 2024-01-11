@@ -80,7 +80,8 @@ class Ipv4CzhRouting : public Ipv4RoutingProtocol
     Ipv4CzhRouting();
     ~Ipv4CzhRouting() override;
     Topolopy* topolopy;
-    Session* session;
+    std::map<int,Session>* sessions;
+    void addNewSession(int port, int src, std::vector<int> dst);
     Ptr<Ipv4Route> RouteOutput(Ptr<Packet> p,
                                const Ipv4Header& header,
                                Ptr<NetDevice> oif,

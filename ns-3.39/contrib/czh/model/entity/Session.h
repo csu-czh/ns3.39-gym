@@ -3,24 +3,27 @@
 #include "../tools/GLOBAL.h"
 #include "Topolopy.h"
 #include "MNode.h"
+#include "MPacket.h"
 
 namespace ns3
 {
+    class MPacket;
     class Session{
     public:
         Session();
-        void addNewSession(int port, int src, std::vector<int> dst);
+        Session(int src, std::vector<int> dst, Topolopy* topolopy);
         bool isPositiveLink(int, int);
         int getBFIndex(Mnode* node);
-        
-        std::string multicastProtocol = "RSBF";
+
         bool isPostiveNode[MAX_NODE];
-        std::vector< std::set<PairII> > m_links;
-        Mnode* sender; 
-        Topolopy* topolopy;
         int distance[MAX_NODE];
-        std::vector<std::set<int> > receivers;
-        std::set<PairII> postiveLink;
+
+        std::set<PairII> m_links; // node,interfaceId
+        std::set<PairII> postiveLink; // node,node
+        Mnode* sender;
+        Topolopy* topolopy;
+        std::set<int> receivers;
+        MPacket *mpacket;
     };
 }
 #endif

@@ -79,7 +79,7 @@ class Ipv4OrcaRouting : public Ipv4RoutingProtocol
     Ipv4OrcaRouting();
     ~Ipv4OrcaRouting() override;
     Topolopy* topolopy;
-    Session* session;
+    std::map<int,Session> sessions;
     Ptr<Ipv4Route> RouteOutput(Ptr<Packet> p,
                                const Ipv4Header& header,
                                Ptr<NetDevice> oif,

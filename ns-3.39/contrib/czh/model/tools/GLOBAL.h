@@ -14,7 +14,6 @@
 #define TOPOLOPY_TYPE 1 // 0 代表leafspine 1 代表fattree
 #define MAX_NODE 10000
 #define INF_INT 1e9+7
-#define MAX_TYPE 5
 #define SPINE_NUM 32
 #define LEAF_NUM 32
 #define HOST_PERLEAF_NUM 4

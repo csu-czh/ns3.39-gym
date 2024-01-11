@@ -574,7 +574,9 @@ Ipv4OrcaRouting::RouteInput(Ptr<const Packet> p,
     int32_t interface = m_ipv4->GetInterfaceForDevice(idev);
     int nodeId = idev->GetNode()->GetId();
     std::string type = topolopy->nodes[nodeId]->type;
-     if (!lcb.IsNull() && session->receivers[port-1001].find(nodeId) != session->receivers[port-1001].end())
+   
+    int flowId = port - 1001;
+     if (!lcb.IsNull() && sessions[flowId].receivers.find(nodeId) != sessions[flowId].receivers.end())
     {
         // std::cout<<"orca host "<<nodeId<<std::endl;
         NS_LOG_LOGIC("Local delivery to " << ipHeader.GetDestination());
@@ -615,7 +617,7 @@ Ipv4OrcaRouting::RouteInput(Ptr<const Packet> p,
     }else{
         for(int i=1;i<m_ipv4->GetNInterfaces();i++){
             // std::cout<<nodeId<<" "<<i-1<<std::endl;
-            if(session->m_links[port-1001].find(make_pair(nodeId,i-1)) ==  session->m_links[port-1001].end())
+            if(sessions[flowId].m_links.find(make_pair(nodeId,i-1)) ==  sessions[flowId].m_links.end())
                 continue;
             // std::cout<<"send "<<nodeId<<" "<<i<<std::endl;
             int32_t outInterface = i;

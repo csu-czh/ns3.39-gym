@@ -4,12 +4,71 @@
 // std::set<Mnode*>receivers;
 namespace ns3
 {
-    Session::Session()
+    void dijkstra(int st, int dist[], Topolopy *topolopy);
+    Session::Session(){}
+
+    Session::Session(int src, std::vector<int> dst, Topolopy* topolopy)
     {
-        for (int i = 0; i < MAX_NODE; i++)
-        {
-            sender = NULL;
+        this->topolopy = topolopy;
+        sender = topolopy->nodes[src];
+        int n = topolopy->nodes.size();
+        for(u_int32_t i =0;i<dst.size();i++){
+            receivers.insert(dst[i]);
         }
+        // std::cout<<" receivers.insert(dst[i]); "<<std::endl;
+        // 通过Dijkstra算法计算出sender到所有节点的最短距离
+        for(int i=0;i<n;i++){
+            isPostiveNode[i] = 0;
+        }
+        dijkstra(src, distance, topolopy);
+   
+        std::queue<Mnode *> q;
+        for (u_int32_t i=0;i<dst.size();i++)
+        {
+            Mnode *start = topolopy->nodes[dst[i]];
+            q.push(start);
+            isPostiveNode[start->id] = 1;
+            // std::cout<<"isPostiveNode " << start->id << std::endl;
+        }
+
+        while (!q.empty())
+        {
+            Mnode * now = q.front();
+            q.pop();
+            // std::cout<<"now->id: "<<now->id<<std::endl;
+            if (now->id == src)
+                continue;
+            int tmp = rand();
+            for (u_int32_t j = 0; j < now->linkedNodes.size(); j++)
+            {
+                // int x = j;
+                int x = (j + tmp)% (now->linkedNodes.size());
+                int to = now->linkedNodes[x]->id;
+                if (distance[now->id] == distance[to] + 1)
+                {
+                    for(u_int32_t k=0; k<topolopy->nodes[to]->linkedNodes.size(); k++){
+                        if(topolopy->nodes[to]->linkedNodes[k]->id == now->id){
+                            m_links.insert(std::make_pair(to, k));
+                            postiveLink.insert(std::make_pair(to, now->id));
+                            // std::cout<< "insert positive link a,to" <<to <<" " << now->id <<" " <<distance[now->id] << std::endl;
+                            // std::cout<< "insert positive link a,link" <<to <<" " << k << std::endl;
+                        }
+                    }
+
+                    if (!isPostiveNode[to])
+                    {
+                        q.push(now->linkedNodes[x]);
+                        isPostiveNode[to] = 1;
+                        // std::cout<<"isPostiveNode " << to << std::endl;
+                    }
+                    break;
+                }
+            }
+        }
+
+        std::cout<<"isPostiveNode " << isPostiveNode << std::endl;
+        std::cout<<"positive links "<< m_links.size()<<std::endl;
+        std::cout<<"Session end"<<std::endl;
     }
 
     bool Session::isPositiveLink(int a, int b)
@@ -70,67 +129,5 @@ namespace ns3
                 }
             }
         }
-    }
-
-    void Session::addNewSession(int port,int src, std::vector<int>dst){
-        int flowId = port - 1001;
-        receivers.push_back(std::set<int>());
-        m_links.push_back( std::set< PairII >());
-        int n = topolopy->nodes.size();
-        for(u_int32_t i =0;i<dst.size();i++){
-            // std::cout<<dst[i]<<" "; 
-            receivers[flowId].insert(dst[i]);
-        }
-        // std::cout<<std::endl;
-        // 通过Dijkstra算法计算出sender到所有节点的最短距离
-        int distance[topolopy->nodes.size()];
-        bool isPostiveNode[topolopy->nodes.size()];
-        for(int i=0;i<n;i++){
-            isPostiveNode[i] = 0;
-        }
-        dijkstra(src, distance, topolopy);
-   
-        std::queue<Mnode *> q;
-        for (u_int32_t i=0;i<dst.size();i++)
-        {
-            Mnode *start = topolopy->nodes[dst[i]];
-            q.push(start);
-            isPostiveNode[start->id] = 1;
-        }
-        while (!q.empty())
-        {
-            Mnode * now = q.front();
-            q.pop();
-            // std::cout<<"now->id: "<<now->id<<std::endl;
-            if (now->id == src)
-                continue;
-            int tmp = rand();
-            for (u_int32_t j = 0; j < now->linkedNodes.size(); j++)
-            {
-                // int x = j;
-                int x = (j + tmp)% (now->linkedNodes.size());
-                int to = now->linkedNodes[x]->id;
-                if (distance[now->id] == distance[to] + 1)
-                {
-                    for(u_int32_t k=0; k<topolopy->nodes[to]->linkedNodes.size(); k++){
-                        if(topolopy->nodes[to]->linkedNodes[k]->id == now->id){
-                            // std::cout<<"link : "<<now->id<<" "<<to<<std::endl;
-                            m_links[flowId].insert(std::make_pair(to, k));
-                        }
-                    }
-
-                    if (!isPostiveNode[to])
-                    {
-                        q.push(now->linkedNodes[x]);
-                        isPostiveNode[to] = 1;
-                    }
-                    break;
-                }
-            }
-        }
-        // std::cout<<"end"<<std::endl;
-    };
-    bool isPostiveNode(){
-        return true;
     }
 }

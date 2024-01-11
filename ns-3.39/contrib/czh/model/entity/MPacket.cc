@@ -6,6 +6,10 @@
 #include <random>
 namespace ns3
 {
+
+std::pair<int, int> getMinXY_by_Enumerate(double S, double p[3]);
+std::pair<int, int> getMinXY_by_simulated_annealing2(double S, double p[5]);
+
 // 计算假阳性率的标准公式
 double fprr(int n, double m, int k)
 {
@@ -71,6 +75,126 @@ int BloomFilter::VaryExist(const char *str)
         }
     }
     return 1;
+}
+
+MPacket::MPacket(Session* session, std::string _multicastProtocol){
+    multicastProtocol = _multicastProtocol;
+    if(multicastProtocol.compare("RSBF") == 0 ){
+        initRSBF(session);
+    }else{
+
+    }
+}
+
+void MPacket::initRSBF(Session* session){
+    std::cout<<"RSBF"<<std::endl;
+    if(TOPOLOPY_TYPE == 1){ //fattree
+        generateLabelFattree(session);
+    }else{
+        generateLabelLeafspine();
+    }
+}
+
+void MPacket::generateLabelFattree(Session * session){
+    int hops = 5;
+    // std::cout<< "session " << session << std::endl;
+    Topolopy * topology = session->topolopy;
+    // std::cout<<"topolopy " << topology << std::endl; 
+    int n = topology->nodes.size(); // 拓扑中节点总数
+    std::cout<< "topo size " << n << std::endl;
+    std::vector<std::pair<int, int> > positiveLink[hops];
+    std::vector<std::pair<int, int> > negativeLink[hops];
+
+    for (int i = 0; i < n; i++)
+    {
+        Mnode *node = topology->nodes[i];
+        int layer = session->distance[node->id] - 1;
+
+        if (!session->isPostiveNode[i])
+            continue;
+        
+
+        if (node->type.compare("host") == 0)
+            continue; // 只考虑交换机
+
+        // std::cout<<"pk is positive "<< i << std::endl;
+        for (int j = 0; j < node->linkedNodes.size(); j++)
+        {
+            int to = node->linkedNodes[j]->id;
+            int isPositive = session->isPositiveLink(node->id, to);
+            int a = node->id;
+            int b = to;
+            // std::cout<< session->distance[to] <<" " <<session->distance[node->id]<<std::endl;
+            if (session->distance[to] != session->distance[node->id] + 1) // 不能访问同端的点
+                continue;
+            // std::cout<< a <<" " <<to<<std::endl;
+            if (isPositive)
+            {
+                positiveLink[layer].push_back(std::make_pair(a, b));
+            }
+            else
+            {
+                negativeLink[layer].push_back(std::make_pair(a, b));
+            }
+        }
+    }
+
+    double p[5];
+    std::cout<<"number of ports: \n";
+    for (int i = 0; i < hops; i++)
+    {
+        p[i] = positiveLink[i].size();
+        std::cout << p[i] << " ";
+    }
+    std::cout << "\n";
+
+    int sumBit = BF_SIZE;
+    int x, y;
+    // 计算最优的x,y分配
+    std::pair<int, int> minXY = getMinXY_by_Enumerate(sumBit, p);
+    std::pair<int, int> minXY2 = getMinXY_by_simulated_annealing2(sumBit, p);
+    // std::cout << "true x,y: " << minXY.first << " " << minXY.second << std::endl;
+    // std::cout << "my x,y: " << minXY2.first << " " << minXY2.second << std::endl;
+    x = minXY2.first, y = minXY2.second;
+    int bits[3];
+    bits[0] = x;
+    bits[1] = y;
+    bits[2] = sumBit - bits[0] - bits[1];
+    // bits[0] = 1, bits[1] = 1, bits[2] = 999;
+    // std::cout<<"avg: "<<(bits[0]*2 + bits[1]*3 + bits[2] * 5 )/ 5<<std::endl;
+    int bfindexMap[5] = {0,0,1,2,2};
+
+    for (int i = 0; i < 3; i++){
+        this->bfs[i] = BloomFilter(bits[i]);
+    }
+
+    for( int i=0;i< hops;i++){
+        int bfIndex = bfindexMap[i];
+        for (int j = 0; j < positiveLink[i].size(); j++)
+        {
+            std::string s = std::to_string(positiveLink[i][j].first) + " to " + std::to_string(positiveLink[i][j].second);
+            this->bfs[bfIndex].SetKey(s.c_str());
+        }
+    }
+}
+
+void MPacket::generateLabelLeafspine(){
+
+}
+
+bool MPacket::doForwardRSBF(int nodeId, int interfaceId, Topolopy* topology, Session* session){
+    Mnode* nodea = topology->nodes[nodeId];
+    Mnode* nodeb = nodea->linkedNodes[interfaceId];
+    std::string link = std::to_string(nodea->id) + " to " + std::to_string(nodeb->id);
+    int bfIndex = 0;
+    if(nodea->pod == session->sender->pod){
+        bfIndex = 0;
+    }else if(nodea->type == "core") {
+        bfIndex = 1;
+    }else{
+        bfIndex = 2;
+    }
+    return bfs[bfIndex].VaryExist(link.c_str());
 }
 
 // 假设假阳性端口到达的节点为阴性节点。
@@ -419,82 +543,6 @@ void generateLeafSpinePacket(Topolopy &topolopy, Session &session, MPacket &pack
         packet.bfs[i] = bf;
     }
 }
-
-// 这里产生包头的三个BF
-void generateFatTreePacket(Topolopy &topolopy, Session &session, MPacket &packet)
-{
-    int n = topolopy.nodes.size(); // 拓扑中节点总数
-    std::vector<std::pair<int, int> > positiveLink[5];
-    std::vector<std::pair<int, int> > negativeLink[5];
-
-    for (int i = 0; i < n; i++)
-    {
-        Mnode *node = topolopy.nodes[i];
-        int layer = session.distance[node->id] - 1;
-
-        if (!session.isPostiveNode[i])
-            continue;
-        if (node->type.compare("host") == 0)
-            continue; // 只考虑交换机
-        for (int j = 0; j < node->linkedNodes.size(); j++)
-        {
-            int to = node->linkedNodes[j]->id;
-            int isPositive = session.isPositiveLink(node->id, to);
-            int a = node->id;
-            int b = to;
-            if (session.distance[to] != session.distance[node->id] + 1) // 不能访问同端的点
-                continue;
-            if (isPositive)
-            {
-                positiveLink[layer].push_back(std::make_pair(a, b));
-            }
-            else
-            {
-                negativeLink[layer].push_back(std::make_pair(a, b));
-            }
-        }
-    }
-
-    double p[5];
-    // std::cout<<"number of ports: ";
-    for (int i = 0; i < 5; i++)
-    {
-        p[i] = positiveLink[i].size();
-        // std::cout << p[i] << " ";
-    }
-    // std::cout << "\n";
-
-    int sumBit = BF_SIZE;
-    int x, y;
-    // 计算最优的x,y分配
-    std::pair<int, int> minXY = getMinXY_by_Enumerate(sumBit, p);
-    std::pair<int, int> minXY2 = getMinXY_by_simulated_annealing2(sumBit, p);
-    // std::cout << "true x,y: " << minXY.first << " " << minXY.second << std::endl;
-    // std::cout << "my x,y: " << minXY2.first << " " << minXY2.second << std::endl;
-    x = minXY2.first, y = minXY2.second;
-    int bits[3];
-    bits[0] = x;
-    bits[1] = y;
-    bits[2] = sumBit - bits[0] - bits[1];
-    // bits[0] = 1, bits[1] = 1, bits[2] = 999;
-    // std::cout<<"avg: "<<(bits[0]*2 + bits[1]*3 + bits[2] * 5 )/ 5<<std::endl;
-    int bfindexMap[5] = {0,0,1,2,2};
-
-    for (int i = 0; i < 3; i++){
-        packet.bfs[i] = BloomFilter(bits[i]);
-    }
-
-    for( int i=0;i<5;i++){
-        int bfIndex = bfindexMap[i];
-        for (int j = 0; j < positiveLink[i].size(); j++)
-        {
-            std::string s = std::to_string(positiveLink[i][j].first) + " to " + std::to_string(positiveLink[i][j].second);
-            packet.bfs[bfIndex].SetKey(s.c_str());
-        }
-    }
-}
-
-
 
 // This file contains the implementation of functions related to BloomFilter and packet forwarding.
 // The BloomFilter class provides functions to set keys and check if a key exists in the filter.

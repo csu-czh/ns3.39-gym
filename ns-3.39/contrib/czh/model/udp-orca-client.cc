@@ -101,6 +101,7 @@ UdpOrcaClient::UdpOrcaClient()
     m_sendEvent = EventId();
     m_ack_num = 0;
     m_flight_size = 0;
+    receiver_num = 0;
 }
 
 UdpOrcaClient::~UdpOrcaClient()
@@ -275,27 +276,32 @@ UdpOrcaClient::HandleRead(Ptr<Socket> socket)
         if (InetSocketAddress::IsMatchingType(from))
         {
             // std::cout<<m_ack_num<<std::endl;
+
             Ipv4Address ipv4Addr = InetSocketAddress::ConvertFrom(from).GetIpv4();
+            std::cout<<ipv4Addr<<std::endl;
             if(receiver_packet_num[ipv4Addr] == 0){
                 receivers.push_back(ipv4Addr);
             }
             receiver_packet_num[ipv4Addr] ++;
-            int minn = 1e9;
-            for(auto it = receiver_packet_num.begin();it!=receiver_packet_num.end();it++){
-                minn = std::min(minn, (*it).second);
-            }
 
-            while(minn>m_ack_num){
-                m_flight_size--;
-                m_ack_num++;
+            if(receiver_num == receivers.size()){
+                int minn = 1e9;
+                for(auto it = receiver_packet_num.begin();it!=receiver_packet_num.end();it++){
+                    minn = std::min(minn, (*it).second);
+                }
+                m_flight_size-= minn - m_ack_num;
+                m_ack_num+=minn - m_ack_num;
+                if(m_ack_num == m_count){
+                    int64_t currentTimeNanoSeconds = ns3::Simulator::Now().GetNanoSeconds();
+                    std::cout<<"czh finsh flow id = "<< m_peerPort - 1000<<" "<<currentTimeNanoSeconds<<std::endl;
+                }
             }
+            
 
             // std::cout<<"czh receive a ack"<<" "<< InetSocketAddress::ConvertFrom(from).GetIpv4()<<std::endl;
             // std::cout<<"czh receive a ack"<<" "<< m_ack_num <<" "<< m_count<<std::endl;
-            if(m_ack_num == m_count){
-                int64_t currentTimeNanoSeconds = ns3::Simulator::Now().GetNanoSeconds();
-                std::cout<<"czh finsh flow id = "<<m_peerPort - 1000<<" "<<currentTimeNanoSeconds<<std::endl;
-            }
+            
+
             NS_LOG_INFO("At time " << Simulator::Now().As(Time::S) << " client received "
                                    << packet->GetSize() << " bytes from "
                                    << InetSocketAddress::ConvertFrom(from).GetIpv4() << " port "

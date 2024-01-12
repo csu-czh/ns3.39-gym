@@ -28,7 +28,7 @@ namespace ns3
             Mnode *start = topolopy->nodes[dst[i]];
             q.push(start);
             isPostiveNode[start->id] = 1;
-            // std::cout<<"isPostiveNode " << start->id << std::endl;
+            std::cout<<"isPostiveNode " << start->id << std::endl;
         }
 
         while (!q.empty())
@@ -50,7 +50,7 @@ namespace ns3
                         if(topolopy->nodes[to]->linkedNodes[k]->id == now->id){
                             m_links.insert(std::make_pair(to, k));
                             postiveLink.insert(std::make_pair(to, now->id));
-                            // std::cout<< "insert positive link a,to" <<to <<" " << now->id <<" " <<distance[now->id] << std::endl;
+                            std::cout<< "insert positive link a,to" <<to <<" " << now->id <<" " <<distance[now->id] << std::endl;
                             // std::cout<< "insert positive link a,link" <<to <<" " << k << std::endl;
                         }
                     }

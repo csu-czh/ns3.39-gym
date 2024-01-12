@@ -51,8 +51,7 @@ int main(int argc, char* argv[])
     PointToPointHelper p2p;
     Ipv4AddressHelper ipv4;
     Topolopy* topolopy = new Topolopy();
-    Session* session = new Session();
-
+    std::map<int,Session> sessions; 
     int nodeNum;
     int linkNum;
     int flowNum;
@@ -70,13 +69,12 @@ int main(int argc, char* argv[])
     internet.SetRoutingHelper(listRouting);
     internet.Install(nodes);
     
-    session->topolopy = topolopy;
-    session->multicastProtocol = "Yeti";
+    
     for (int i = 0; i < nodeNum; i++){
         Ptr<Ipv4> ipv4 = nodes.Get(i)->GetObject<Ipv4>();
         ns3::Ptr<ns3::Ipv4CzhRouting> routing = ipv4CzhRoutingHelper.GetCzhRouting(ipv4);
         routing->topolopy = topolopy;
-        routing->session = session;
+        routing->sessions = &sessions;
     }
     
     for (int i = 0; i < nodeNum; i++){
@@ -135,8 +133,13 @@ int main(int argc, char* argv[])
             apps.Start(Seconds(start_time));
             apps.Stop(Seconds(stop_time));
         }
-        session->addNewSession(port, src - 1, dsts);
+        routing->addNewSession(port, src - 1, dsts);
+        (*(routing->sessions))[i].mpacket = new MPacket( &(*(routing->sessions))[i], "RSBF");
+        std::cout<<"mpacket "<< ( *(routing->sessions))[0].mpacket<<std::endl;
+
     }
+
+    // std::cout<<"topolopy" << topolopy << std::endl; 
 
     AsciiTraceHelper ascii;
     p2p.EnableAsciiAll(ascii.CreateFileStream("./output/test-czh.tr"));
@@ -144,6 +147,6 @@ int main(int argc, char* argv[])
 
     Simulator::Run();
     Simulator::Destroy();
-
+    std::cout<<"Simulator finished! " << std::endl; 
     return 0;
 }

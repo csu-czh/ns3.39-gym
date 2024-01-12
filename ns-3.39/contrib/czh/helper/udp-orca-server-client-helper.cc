@@ -91,7 +91,7 @@ UdpOrcaClientHelper::SetAttribute(std::string name, const AttributeValue& value)
 }
 
 ApplicationContainer
-UdpOrcaClientHelper::Install(NodeContainer c)
+UdpOrcaClientHelper::Install(NodeContainer c, int receiver_num)
 {
     ApplicationContainer apps;
     for (NodeContainer::Iterator i = c.Begin(); i != c.End(); ++i)
@@ -99,6 +99,7 @@ UdpOrcaClientHelper::Install(NodeContainer c)
         Ptr<Node> node = *i;
         Ptr<UdpOrcaClient> client = m_factory.Create<UdpOrcaClient>();
         node->AddApplication(client);
+        client->receiver_num = receiver_num;
         apps.Add(client);
     }
     return apps;

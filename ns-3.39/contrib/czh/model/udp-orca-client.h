@@ -54,6 +54,7 @@ class UdpOrcaClient : public Application
     UdpOrcaClient();
 
     ~UdpOrcaClient() override;
+    int receiver_num;
     std::vector<Ipv4Address>receivers;
     std::map<Ipv4Address,int>receiver_packet_num;
     /**

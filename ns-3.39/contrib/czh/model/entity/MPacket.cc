@@ -112,7 +112,6 @@ void MPacket::generateLabelFattree(Session * session){
 
         if (!session->isPostiveNode[i])
             continue;
-        
 
         if (node->type.compare("host") == 0)
             continue; // 只考虑交换机
@@ -173,6 +172,8 @@ void MPacket::generateLabelFattree(Session * session){
         for (int j = 0; j < positiveLink[i].size(); j++)
         {
             std::string s = std::to_string(positiveLink[i][j].first) + " to " + std::to_string(positiveLink[i][j].second);
+            std::cout<<"add s " << s <<  " bf " << bfIndex <<std::endl;
+            
             this->bfs[bfIndex].SetKey(s.c_str());
         }
     }
@@ -194,6 +195,11 @@ bool MPacket::doForwardRSBF(int nodeId, int interfaceId, Topolopy* topology, Ses
     }else{
         bfIndex = 2;
     }
+    bool forward = bfs[bfIndex].VaryExist(link.c_str());
+    // if(nodeId == 59){
+        // std::cout<< "bfIndex " << bfIndex <<std::endl;
+        // std::cout<< "doForward " << interfaceId <<" " <<nodeb->id <<" " << forward<< std::endl;
+    // }
     return bfs[bfIndex].VaryExist(link.c_str());
 }
 

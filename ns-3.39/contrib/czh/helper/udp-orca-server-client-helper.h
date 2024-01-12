@@ -139,8 +139,8 @@ class UdpOrcaClientHelper
      *
      * \returns the applications created, one application per input node.
      */
-    ApplicationContainer Install(NodeContainer c);
-
+    // ApplicationContainer Install(NodeContainer c);
+    ApplicationContainer Install(NodeContainer c, int receiver_num);
   private:
     ObjectFactory m_factory; //!< Object factory.
 };

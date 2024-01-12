@@ -538,25 +538,21 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                     isForwardInterface = 1;
                 }
             }else if(multicastProtocol.compare("RSBF") == 0 ){
+                
                 if((*sessions)[flowId].mpacket->doForwardRSBF(nodeId, i-1, topolopy, &((*sessions)[flowId]) )){
                     isForwardInterface = 1;
                 }else{
                     isForwardInterface = 0;
                 }
             }else if(multicastProtocol.compare("Elmo") == 0){
-
+                
             }else if(multicastProtocol.compare("LIPSIN") == 0){
                 
             }
             // std::cout<<nodeId<<" "<<i-1<<std::endl;
             if(isForwardInterface){
-                // std::cout<<"send "<<nodeId<<" "<<i<<std::endl;
                 int32_t outInterface = i;
                 Ipv4Address outAddress = m_ipv4->GetAddress(outInterface, 0).GetLocal();
-                // std::cout<<"inputInterface "<< interface<<std::endl;
-                // std::cout<<"inputAddress " << inputAddress <<std::endl;
-                // std::cout<<"outInterface "<< outInterface<<std::endl;
-                // std::cout<<"outAddress " << outAddress <<std::endl;
                 Ptr<Ipv4Route> rtentry = Create<Ipv4Route>();
                 rtentry->SetGateway(Ipv4Address("0.0.0.0"));
                 rtentry->SetOutputDevice(m_ipv4->GetNetDevice(outInterface));

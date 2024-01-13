@@ -18,7 +18,7 @@
 #define LEAF_NUM 32
 #define HOST_PERLEAF_NUM 4
 #define RECEIVE_PARTION 0.4
-#define BF_SIZE 500
+#define BF_SIZE 800
 #define FATTREE_POD 10
 typedef std::pair<int,int> PairII;
 

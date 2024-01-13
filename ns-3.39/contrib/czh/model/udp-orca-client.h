@@ -92,7 +92,7 @@ class UdpOrcaClient : public Application
     TracedCallback<Ptr<const Packet>> m_rxTrace;
     /// Callbacks for tracing the packet Tx events, includes source and destination addresses
     TracedCallback<Ptr<const Packet>, const Address&, const Address&> m_txTraceWithAddresses;
-
+    bool finished;
     uint32_t m_count; //!< Maximum number of packets the application will send
     Time m_interval;  //!< Packet inter-send time
     uint32_t m_size;  //!< Size of the sent packet (including the SeqTsHeader)

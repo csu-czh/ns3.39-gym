@@ -19,18 +19,18 @@
  */
 #include "udp-orca-client.h"
 
-#include "ns3/seq-ts-header.h"
-
 #include "ns3/inet-socket-address.h"
 #include "ns3/inet6-socket-address.h"
 #include "ns3/ipv4-address.h"
 #include "ns3/log.h"
 #include "ns3/nstime.h"
 #include "ns3/packet.h"
+#include "ns3/seq-ts-header.h"
 #include "ns3/simulator.h"
 #include "ns3/socket-factory.h"
 #include "ns3/socket.h"
 #include "ns3/uinteger.h"
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -102,6 +102,7 @@ UdpOrcaClient::UdpOrcaClient()
     m_ack_num = 0;
     m_flight_size = 0;
     receiver_num = 0;
+    finished = false;
 }
 
 UdpOrcaClient::~UdpOrcaClient()
@@ -140,14 +141,15 @@ UdpOrcaClient::StartApplication()
     {
         TypeId tid = TypeId::LookupByName("ns3::UdpSocketFactory");
         m_socket = Socket::CreateSocket(GetNode(), tid);
-        
+
         if (Ipv4Address::IsMatchingType(m_peerAddress))
         {
             if (m_socket->Bind() == -1)
             {
                 NS_FATAL_ERROR("Failed to bind socket");
             }
-            m_socket->Connect(InetSocketAddress(Ipv4Address::ConvertFrom(m_peerAddress), m_peerPort));
+            m_socket->Connect(
+                InetSocketAddress(Ipv4Address::ConvertFrom(m_peerAddress), m_peerPort));
         }
         else if (Ipv6Address::IsMatchingType(m_peerAddress))
         {
@@ -217,10 +219,18 @@ UdpOrcaClient::StopApplication()
 void
 UdpOrcaClient::Send()
 {
+    // std::cout << "send " << std::endl;
     NS_LOG_FUNCTION(this);
     NS_ASSERT(m_sendEvent.IsExpired());
     // std::cout<<"Send"<<m_flight_size<<" "<<m_window_size<<std::endl;
-    if(m_flight_size < m_window_size){
+    if (m_flight_size < m_window_size)
+    {
+        if (m_sent == 0)
+        {
+            int64_t currentTimeNanoSeconds = ns3::Simulator::Now().GetNanoSeconds();
+            std::cout << "czh start flow id = " << m_peerPort - 1000 << " "
+                      << currentTimeNanoSeconds << std::endl;
+        }
         // std::cout<<"Send"<<m_flight_size<<" "<<m_window_size<<std::endl;
         Address from;
         Address to;
@@ -244,14 +254,9 @@ UdpOrcaClient::Send()
             m_totalTx += p->GetSize();
             // std::cout<< p->GetSize() << std::endl;
         }
-
-        if(m_sent == 1){
-            int64_t currentTimeNanoSeconds = ns3::Simulator::Now().GetNanoSeconds();
-            std::cout<<"czh start flow id = "<< m_peerPort-1000 <<" "<<currentTimeNanoSeconds<<std::endl;
-        }
     }
 
-//    std::cout <<m_flight_size <<" "<< m_window_size<<std::endl;
+    //    std::cout <<m_flight_size <<" "<< m_window_size<<std::endl;
     if (m_sent < m_count || m_count == 0)
     {
         m_sendEvent = Simulator::Schedule(m_interval, &UdpOrcaClient::Send, this);
@@ -278,29 +283,51 @@ UdpOrcaClient::HandleRead(Ptr<Socket> socket)
             // std::cout<<m_ack_num<<std::endl;
 
             Ipv4Address ipv4Addr = InetSocketAddress::ConvertFrom(from).GetIpv4();
-            std::cout<<ipv4Addr<<std::endl;
-            if(receiver_packet_num[ipv4Addr] == 0){
+            // std::cout<<ipv4Addr<<std::endl;
+            if (receiver_packet_num[ipv4Addr] == 0)
+            {
                 receivers.push_back(ipv4Addr);
             }
-            receiver_packet_num[ipv4Addr] ++;
+            receiver_packet_num[ipv4Addr]++;
+            //  std::cout<<"judge\n";
+            //         for(auto it =
+            //         receiver_packet_num.begin();it!=receiver_packet_num.end();it++){
+            //             std::cout<< (*it).second << " ";
+            //         }
+            //         std::cout<<std::endl;
+            if (receiver_num >= receivers.size())
+            {
+                int minn = m_count;
 
-            if(receiver_num == receivers.size()){
-                int minn = 1e9;
-                for(auto it = receiver_packet_num.begin();it!=receiver_packet_num.end();it++){
+                for (auto it = receiver_packet_num.begin(); it != receiver_packet_num.end(); it++)
+                {
                     minn = std::min(minn, (*it).second);
                 }
-                m_flight_size-= minn - m_ack_num;
-                m_ack_num+=minn - m_ack_num;
-                if(m_ack_num == m_count){
+                m_flight_size -= minn - m_ack_num;
+                m_ack_num += minn - m_ack_num;
+                if (m_ack_num == m_count && finished == false)
+                {
+                    finished = true;
+                    // std::cout<<"judge\n";
+                    // for(auto it =
+                    // receiver_packet_num.begin();it!=receiver_packet_num.end();it++){
+                    //     std::cout<< (*it).second << " ";
+                    // }
+                    std::cout << std::endl;
                     int64_t currentTimeNanoSeconds = ns3::Simulator::Now().GetNanoSeconds();
-                    std::cout<<"czh finsh flow id = "<< m_peerPort - 1000<<" "<<currentTimeNanoSeconds<<std::endl;
+                    int64_t fct = currentTimeNanoSeconds - 1000000000;
+                    std::cout << "\n\n";
+                    std::cout << "Finsh flowid : " << m_peerPort - 1000 << ", "
+                              << "Fct = " << currentTimeNanoSeconds - 1000000000 << "ns"
+                              << ", "
+                              << "Rate: " << 1.0 * m_count * m_size * 8 / fct << " Gbps"
+                              << std::endl;
                 }
             }
-            
 
-            // std::cout<<"czh receive a ack"<<" "<< InetSocketAddress::ConvertFrom(from).GetIpv4()<<std::endl;
-            // std::cout<<"czh receive a ack"<<" "<< m_ack_num <<" "<< m_count<<std::endl;
-            
+            // std::cout<<"czh receive a ack"<<" "<<
+            // InetSocketAddress::ConvertFrom(from).GetIpv4()<<std::endl; std::cout<<"czh receive a
+            // ack"<<" "<< m_ack_num <<" "<< m_count<<std::endl;
 
             NS_LOG_INFO("At time " << Simulator::Now().As(Time::S) << " client received "
                                    << packet->GetSize() << " bytes from "

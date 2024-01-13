@@ -49,7 +49,7 @@ class MPacket
   public:
     BloomFilter bfs[3];
     std::string multicastProtocol;
-
+    std::set<PairII> erroredge;
     MPacket(Session* session, std::string _multicastProtocol);
     void generateLabelFattree(Session* session);
     void generateLabelLeafspine();

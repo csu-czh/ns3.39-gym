@@ -121,15 +121,15 @@ int main(int argc, char* argv[])
         Ptr<Ipv4> ipv4 = nodes.Get(src)->GetObject<Ipv4>();
         ns3::Ptr<ns3::Ipv4CzhRouting> routing = ipv4CzhRoutingHelper.GetCzhRouting(ipv4);
         Ipv4Address clientAddress = ipv4->GetAddress(1, 0).GetLocal(); // GetAddress(0,0) is the loopback 127.0.0.1
-        ApplicationContainer apps;
+        ApplicationContainer clientApps;
         Ipv4Address serverAddress;
         UdpOrcaClientHelper client(Ipv4Address("0.0.0.0"), port); // multicast address
         client.SetAttribute("MaxPackets", UintegerValue(maxPacketCount));
-        client.SetAttribute("Interval", TimeValue(NanoSeconds(100)));
-        client.SetAttribute("PacketSize", UintegerValue(1224));
-        apps = client.Install(nodes.Get(src), dstNum);
-        apps.Start(Seconds(start_time));
-        apps.Stop(Seconds(stop_time));
+        client.SetAttribute("Interval", TimeValue(NanoSeconds(3)));
+        client.SetAttribute("PacketSize", UintegerValue(1100));
+        clientApps = client.Install(nodes.Get(src), dstNum);
+        clientApps.Start(Seconds(start_time));
+        clientApps.Stop(Seconds(stop_time));
 
         for (int j = 0; j < dstNum; j++){
             int dst;
@@ -138,9 +138,9 @@ int main(int argc, char* argv[])
             Ptr<Ipv4> ipv4 = nodes.Get(dst)->GetObject<Ipv4>();
             serverAddress = ipv4->GetAddress(1, 0).GetLocal(); // GetAddress(0,0) is the loopback 127.0.0.1
             UdpOrcaServerHelper server(clientAddress, port);
-            apps = server.Install(nodes.Get(dst));
-            apps.Start(Seconds(start_time));
-            apps.Stop(Seconds(stop_time));
+            ApplicationContainer serverApps = server.Install(nodes.Get(dst));
+            serverApps.Start(Seconds(start_time));
+            serverApps.Stop(Seconds(stop_time));
         }
         routing->addNewSession(port, src, dsts);
         (*(routing->sessions))[i].mpacket = new MPacket( &(*(routing->sessions))[i], "RSBF");

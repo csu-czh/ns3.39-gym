@@ -28,7 +28,6 @@
 
 #include "ns3/ipv4-route.h"
 #include "ns3/ipv4-routing-table-entry.h"
-
 #include "ns3/log.h"
 #include "ns3/names.h"
 #include "ns3/node.h"
@@ -36,6 +35,7 @@
 #include "ns3/packet.h"
 #include "ns3/simulator.h"
 #include "ns3/udp-header.h"
+
 #include <iomanip>
 
 using std::make_pair;
@@ -65,10 +65,10 @@ Ipv4CzhRouting::Ipv4CzhRouting()
 
 void
 Ipv4CzhRouting::AddNetworkRouteTo(Ipv4Address network,
-                                     Ipv4Mask networkMask,
-                                     Ipv4Address nextHop,
-                                     uint32_t interface,
-                                     uint32_t metric)
+                                  Ipv4Mask networkMask,
+                                  Ipv4Address nextHop,
+                                  uint32_t interface,
+                                  uint32_t metric)
 {
     NS_LOG_FUNCTION(this << network << " " << networkMask << " " << nextHop << " "
                          << interface << " " << metric);
@@ -85,9 +85,9 @@ Ipv4CzhRouting::AddNetworkRouteTo(Ipv4Address network,
 
 void
 Ipv4CzhRouting::AddNetworkRouteTo(Ipv4Address network,
-                                     Ipv4Mask networkMask,
-                                     uint32_t interface,
-                                     uint32_t metric)
+                                  Ipv4Mask networkMask,
+                                  uint32_t interface,
+                                  uint32_t metric)
 {
     NS_LOG_FUNCTION(this << network << " " << networkMask << " " << interface << " " << metric);
 
@@ -103,9 +103,9 @@ Ipv4CzhRouting::AddNetworkRouteTo(Ipv4Address network,
 
 void
 Ipv4CzhRouting::AddHostRouteTo(Ipv4Address dest,
-                                  Ipv4Address nextHop,
-                                  uint32_t interface,
-                                  uint32_t metric)
+                               Ipv4Address nextHop,
+                               uint32_t interface,
+                               uint32_t metric)
 {
     NS_LOG_FUNCTION(this << dest << " " << nextHop << " " << interface << " " << metric);
     AddNetworkRouteTo(dest, Ipv4Mask::GetOnes(), nextHop, interface, metric);
@@ -127,9 +127,9 @@ Ipv4CzhRouting::SetDefaultRoute(Ipv4Address nextHop, uint32_t interface, uint32_
 
 void
 Ipv4CzhRouting::AddMulticastRoute(Ipv4Address origin,
-                                     Ipv4Address group,
-                                     uint32_t inputInterface,
-                                     std::vector<uint32_t> outputInterfaces)
+                                  Ipv4Address group,
+                                  uint32_t inputInterface,
+                                  std::vector<uint32_t> outputInterfaces)
 {
     NS_LOG_FUNCTION(this << origin << " " << group << " " << inputInterface << " "
                          << &outputInterfaces);
@@ -185,9 +185,7 @@ Ipv4CzhRouting::GetMulticastRoute(uint32_t index) const
 }
 
 bool
-Ipv4CzhRouting::RemoveMulticastRoute(Ipv4Address origin,
-                                        Ipv4Address group,
-                                        uint32_t inputInterface)
+Ipv4CzhRouting::RemoveMulticastRoute(Ipv4Address origin, Ipv4Address group, uint32_t inputInterface)
 {
     NS_LOG_FUNCTION(this << origin << " " << group << " " << inputInterface);
     for (MulticastRoutesI i = m_multicastRoutes.begin(); i != m_multicastRoutes.end(); i++)
@@ -466,40 +464,40 @@ Ipv4CzhRouting::RemoveRoute(uint32_t index)
     NS_ASSERT(false);
 }
 
-Ptr<Ipv4Route>  // 数据包从主机发出，因此直接发送到交换机
+Ptr<Ipv4Route> // 数据包从主机发出，因此直接发送到交换机
 Ipv4CzhRouting::RouteOutput(Ptr<Packet> p,
-                               const Ipv4Header& header,
-                               Ptr<NetDevice> oif,
-                               Socket::SocketErrno& sockerr)
+                            const Ipv4Header& header,
+                            Ptr<NetDevice> oif,
+                            Socket::SocketErrno& sockerr)
 {
     NS_LOG_FUNCTION(this << p << header << oif << sockerr);
-    
+
     Ipv4Address destination = header.GetDestination();
     // 直接发送到对方面节点，因为主机就一个网卡
     Ptr<Ipv4Route> rtentry = Create<Ipv4Route>();
     rtentry->SetDestination(destination);
     rtentry->SetOutputDevice(m_ipv4->GetNetDevice(1));
-    rtentry->SetSource(m_ipv4->GetAddress(1,0).GetLocal());
+    rtentry->SetSource(m_ipv4->GetAddress(1, 0).GetLocal());
     rtentry->SetGateway(Ipv4Address("0.0.0.0"));
     return rtentry;
 }
 
 bool // 数据包从其他节点到达了当前主机
 Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
-                              const Ipv4Header& ipHeader,
-                              Ptr<const NetDevice> idev,
-                              const UnicastForwardCallback& ucb,
-                              const MulticastForwardCallback& mcb,
-                              const LocalDeliverCallback& lcb,
-                              const ErrorCallback& ecb)
+                           const Ipv4Header& ipHeader,
+                           Ptr<const NetDevice> idev,
+                           const UnicastForwardCallback& ucb,
+                           const MulticastForwardCallback& mcb,
+                           const LocalDeliverCallback& lcb,
+                           const ErrorCallback& ecb)
 {
-    
-    //czh 表示为ack数据包，走global router
-    if(p->GetSize()<200)return false;
+    // czh 表示为ack数据包，走global router
+    if (p->GetSize() < 200)
+        return false;
     // Check if input device supports IP
     NS_ASSERT(m_ipv4);
     NS_ASSERT(m_ipv4->GetInterfaceForDevice(idev) >= 0);
-    
+
     // Ptr<OutputStreamWrapper> stream = Create<OutputStreamWrapper>(&std::cout);
     //  std::cout<<"RouteOutput "<<std::endl;
     // p->Print(std::cout);
@@ -509,48 +507,88 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
     p->PeekHeader(udpHeader);
     int port = udpHeader.GetDestinationPort();
     int flowId = port - 1001;
-    
+
     // std::cout<<"SourcePort: "<<udpHeader.GetDestinationPort()<<std::endl;
-    
-    // czh 
+
+    // czh
     // Next, try to find a route
     // 获取到输入端口的ipv4地址
-    Ipv4Address inputAddress = m_ipv4->GetAddress(m_ipv4->GetInterfaceForDevice(idev), 0).GetLocal();
+    Ipv4Address inputAddress =
+        m_ipv4->GetAddress(m_ipv4->GetInterfaceForDevice(idev), 0).GetLocal();
     int32_t interface = m_ipv4->GetInterfaceForDevice(idev);
     int nodeId = idev->GetNode()->GetId();
 
-    std::cout<<"flowId "<< flowId <<"node : " << nodeId << " receiver a packet "<< std::endl;
-    //到达了主机
-    if (!lcb.IsNull() && (*sessions)[flowId].receivers.find(nodeId) != (*sessions)[flowId].receivers.end() )
+    // std::cout<<"flowId "<< flowId <<"node : " << nodeId << " receiver a packet "<< std::endl;
+    // 到达了主机
+    if (!lcb.IsNull() &&
+        (*sessions)[flowId].receivers.find(nodeId) != (*sessions)[flowId].receivers.end())
     {
         NS_LOG_LOGIC("Local delivery to " << ipHeader.GetDestination());
         lcb(p, ipHeader, interface);
         return true;
-    }else{
+    }
+    else
+    {
         bool isForwarding = false;
         // std::cout<<"nodeId "<<nodeId<<std::endl;
         // std::cout<<"_ipv4->GetNInterfaces() "<<m_ipv4->GetNInterfaces()<<std::endl;
-        for(int i=1; i < m_ipv4->GetNInterfaces(); i++){
+        for (int i = 1; i < m_ipv4->GetNInterfaces(); i++)
+        {
             bool isForwardInterface = 0;
-            std::string multicastProtocol  = (*sessions)[flowId].mpacket->multicastProtocol;
-            if(multicastProtocol.compare("Yeti") == 0 ){
-                if((*sessions)[flowId].m_links.find(make_pair(nodeId, i-1)) !=  (*sessions)[flowId].m_links.end()){
+            std::string multicastProtocol = (*sessions)[flowId].mpacket->multicastProtocol;
+            if (multicastProtocol.compare("Yeti") == 0)
+            {
+                if ((*sessions)[flowId].m_links.find(make_pair(nodeId, i - 1)) !=
+                    (*sessions)[flowId].m_links.end())
+                {
                     isForwardInterface = 1;
                 }
-            }else if(multicastProtocol.compare("RSBF") == 0 ){
-                
-                if((*sessions)[flowId].mpacket->doForwardRSBF(nodeId, i-1, topolopy, &((*sessions)[flowId]) )){
+            }
+            else if (multicastProtocol.compare("RSBF") == 0)
+            {
+                if ((*sessions)[flowId].mpacket->doForwardRSBF(nodeId,
+                                                               i - 1,
+                                                               topolopy,
+                                                               &((*sessions)[flowId])))
+                {
                     isForwardInterface = 1;
-                }else{
+                }
+                else
+                {
                     isForwardInterface = 0;
                 }
-            }else if(multicastProtocol.compare("Elmo") == 0){
-                
-            }else if(multicastProtocol.compare("LIPSIN") == 0){
-                
+            }
+            else if (multicastProtocol.compare("Elmo") == 0)
+            {
+                if ((*sessions)[flowId].mpacket->doForwardRSBF(nodeId,
+                                                               i - 1,
+                                                               topolopy,
+                                                               &((*sessions)[flowId])))
+                {
+                    isForwardInterface = 1;
+                }
+                else
+                {
+                    isForwardInterface = 0;
+                }
+            }
+            else if (multicastProtocol.compare("LIPSIN") == 0)
+            {
+                if ((*sessions)[flowId].mpacket->doForwardRSBF(nodeId,
+                                                               i - 1,
+                                                               topolopy,
+                                                               &((*sessions)[flowId])))
+                {
+                    isForwardInterface = 1;
+                }
+                else
+                {
+                    isForwardInterface = 0;
+                }
             }
             // std::cout<<nodeId<<" "<<i-1<<std::endl;
-            if(isForwardInterface){
+            if (isForwardInterface)
+            {
                 int32_t outInterface = i;
                 Ipv4Address outAddress = m_ipv4->GetAddress(outInterface, 0).GetLocal();
                 Ptr<Ipv4Route> rtentry = Create<Ipv4Route>();
@@ -560,10 +598,10 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                 rtentry->SetSource(m_ipv4->GetAddress(interface, 0).GetLocal());
                 ucb(rtentry, p, ipHeader); // unicast forwarding callback
                 isForwarding = true;
-            } 
+            }
         }
         // std::cout<<idev->GetNode()->GetId()<<std::endl;
-        return isForwarding;
+        return true;
     }
 }
 
@@ -761,17 +799,23 @@ Ipv4CzhRouting::PrintRoutingTable(Ptr<OutputStreamWrapper> stream, Time::Unit un
 }
 
 Ipv4Address
-Ipv4CzhRouting::getPeerAddress(Ipv4Address address){
-    if(address.Get() % 2 ){
+Ipv4CzhRouting::getPeerAddress(Ipv4Address address)
+{
+    if (address.Get() % 2)
+    {
         return Ipv4Address(address.Get() + 1);
         // rtentry->SetGateway( );
         // std::cout<<Ipv4Address(m_ipv4->GetAddress(1,0).GetLocal().Get() + 1)  <<std::endl;
-    }else{
+    }
+    else
+    {
         return Ipv4Address(address.Get() - 1);
     }
 };
 
-void Ipv4CzhRouting::addNewSession(int port, int src, std::vector<int> dst){
+void
+Ipv4CzhRouting::addNewSession(int port, int src, std::vector<int> dst)
+{
     Session session = Session(src, dst, topolopy);
     (*sessions)[port - 1001] = session;
 }

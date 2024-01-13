@@ -1,9 +1,11 @@
 #include "MPacket.h"
-#include <sstream>
-#include <iostream>
+
 #include <cmath>
 #include <ctime>
+#include <iostream>
 #include <random>
+#include <sstream>
+
 namespace ns3
 {
 
@@ -11,7 +13,8 @@ std::pair<int, int> getMinXY_by_Enumerate(double S, double p[3]);
 std::pair<int, int> getMinXY_by_simulated_annealing2(double S, double p[5]);
 
 // 计算假阳性率的标准公式
-double fprr(int n, double m, int k)
+double
+fprr(int n, double m, int k)
 {
     double tmp = 1 - 1 / m;
     tmp = pow(tmp, n * k);
@@ -21,14 +24,16 @@ double fprr(int n, double m, int k)
 
 class Mes
 {
-public:
+  public:
     float fp;
     float tn;
+
     Mes()
     {
         fp = 0;
         tn = 0;
     }
+
     float fpr()
     {
         if ((fp + tn) != 0)
@@ -42,7 +47,8 @@ public:
     }
 };
 
-uint BloomFilter::RSHash(const char *str, int seed)
+uint
+BloomFilter::RSHash(const char* str, int seed)
 {
     // unsigned int b = 378551;
     uint a = 63689;
@@ -55,7 +61,8 @@ uint BloomFilter::RSHash(const char *str, int seed)
     return (hash & 0x7FFFFFFF);
 }
 
-void BloomFilter::SetKey(const char *str)
+void
+BloomFilter::SetKey(const char* str)
 {
     for (int i = 0; i < m_k; ++i)
     {
@@ -64,7 +71,8 @@ void BloomFilter::SetKey(const char *str)
     }
 }
 
-int BloomFilter::VaryExist(const char *str)
+int
+BloomFilter::VaryExist(const char* str)
 {
     for (int i = 0; i < m_k; ++i)
     {
@@ -77,37 +85,47 @@ int BloomFilter::VaryExist(const char *str)
     return 1;
 }
 
-MPacket::MPacket(Session* session, std::string _multicastProtocol){
+MPacket::MPacket(Session* session, std::string _multicastProtocol)
+{
     multicastProtocol = _multicastProtocol;
-    if(multicastProtocol.compare("RSBF") == 0 ){
+    if (multicastProtocol.compare("RSBF") == 0)
+    {
         initRSBF(session);
-    }else{
-
+    }
+    else
+    {
     }
 }
 
-void MPacket::initRSBF(Session* session){
-    std::cout<<"RSBF"<<std::endl;
-    if(TOPOLOPY_TYPE == 1){ //fattree
+void
+MPacket::initRSBF(Session* session)
+{
+    std::cout << "RSBF" << std::endl;
+    if (TOPOLOPY_TYPE == 1)
+    { // fattree
         generateLabelFattree(session);
-    }else{
+    }
+    else
+    {
         generateLabelLeafspine();
     }
 }
 
-void MPacket::generateLabelFattree(Session * session){
+void
+MPacket::generateLabelFattree(Session* session)
+{
     int hops = 5;
     // std::cout<< "session " << session << std::endl;
-    Topolopy * topology = session->topolopy;
-    // std::cout<<"topolopy " << topology << std::endl; 
+    Topolopy* topology = session->topolopy;
+    // std::cout<<"topolopy " << topology << std::endl;
     int n = topology->nodes.size(); // 拓扑中节点总数
-    std::cout<< "topo size " << n << std::endl;
-    std::vector<std::pair<int, int> > positiveLink[hops];
-    std::vector<std::pair<int, int> > negativeLink[hops];
+    std::cout << "topo size " << n << std::endl;
+    std::vector<std::pair<int, int>> positiveLink[hops];
+    std::vector<std::pair<int, int>> negativeLink[hops];
 
     for (int i = 0; i < n; i++)
     {
-        Mnode *node = topology->nodes[i];
+        Mnode* node = topology->nodes[i];
         int layer = session->distance[node->id] - 1;
 
         if (!session->isPostiveNode[i])
@@ -139,7 +157,7 @@ void MPacket::generateLabelFattree(Session * session){
     }
 
     double p[5];
-    std::cout<<"number of ports: \n";
+    std::cout << "number of ports: \n";
     for (int i = 0; i < hops; i++)
     {
         p[i] = positiveLink[i].size();
@@ -152,66 +170,107 @@ void MPacket::generateLabelFattree(Session * session){
     // 计算最优的x,y分配
     std::pair<int, int> minXY = getMinXY_by_Enumerate(sumBit, p);
     std::pair<int, int> minXY2 = getMinXY_by_simulated_annealing2(sumBit, p);
-    // std::cout << "true x,y: " << minXY.first << " " << minXY.second << std::endl;
-    // std::cout << "my x,y: " << minXY2.first << " " << minXY2.second << std::endl;
     x = minXY2.first, y = minXY2.second;
+    x = std::max(100, x);
+    y = std::max(100, x);
     int bits[3];
     bits[0] = x;
     bits[1] = y;
     bits[2] = sumBit - bits[0] - bits[1];
+    std::cout << "my bf bits: " << bits[0] << " " << bits[1] << " " << bits[2] << std::endl;
+
     // bits[0] = 1, bits[1] = 1, bits[2] = 999;
     // std::cout<<"avg: "<<(bits[0]*2 + bits[1]*3 + bits[2] * 5 )/ 5<<std::endl;
-    int bfindexMap[5] = {0,0,1,2,2};
+    int bfindexMap[5] = {0, 0, 1, 2, 2};
 
-    for (int i = 0; i < 3; i++){
+    for (int i = 0; i < 3; i++)
+    {
         this->bfs[i] = BloomFilter(bits[i]);
     }
 
-    for( int i=0;i< hops;i++){
-        int bfIndex = bfindexMap[i];
+    for (int i = 0; i < hops; i++)
+    {
         for (int j = 0; j < positiveLink[i].size(); j++)
         {
-            std::string s = std::to_string(positiveLink[i][j].first) + " to " + std::to_string(positiveLink[i][j].second);
-            std::cout<<"add s " << s <<  " bf " << bfIndex <<std::endl;
-            
+            int a = positiveLink[i][j].first;
+            int b = positiveLink[i][j].second;
+            int bfIndex = 0;
+            if (session->topolopy->nodes[a]->pod == session->sender->pod)
+            {
+                bfIndex = 0;
+            }
+            else if (session->topolopy->nodes[a]->type.compare("core") == 0)
+            {
+                bfIndex = 1;
+            }
+            else
+            {
+                bfIndex = 2;
+            }
+
+            std::string s = std::to_string(positiveLink[i][j].first) + " to " +
+                            std::to_string(positiveLink[i][j].second);
+            std::cout << "add string  " << s << " bf " << bfIndex << std::endl;
+
             this->bfs[bfIndex].SetKey(s.c_str());
         }
     }
 }
 
-void MPacket::generateLabelLeafspine(){
-
+void
+MPacket::generateLabelLeafspine()
+{
 }
 
-bool MPacket::doForwardRSBF(int nodeId, int interfaceId, Topolopy* topology, Session* session){
+bool
+MPacket::doForwardRSBF(int nodeId, int interfaceId, Topolopy* topology, Session* session)
+{
     Mnode* nodea = topology->nodes[nodeId];
     Mnode* nodeb = nodea->linkedNodes[interfaceId];
+    if (session->distance[nodea->id] + 1 != session->distance[nodeb->id])
+        return false;
+    // return session->isPositiveLink(nodea->id, nodeb->id);
+    // std::cout<< "doForwardRSBF "<< nodea->id <<" " << nodeb->id  <<" " <<session->distance[nodea->id]<<std::endl;
     std::string link = std::to_string(nodea->id) + " to " + std::to_string(nodeb->id);
+
     int bfIndex = 0;
-    if(nodea->pod == session->sender->pod){
+    if (nodea->pod == session->sender->pod)
+    {
         bfIndex = 0;
-    }else if(nodea->type == "core") {
+    }
+    else if (nodea->type == "core")
+    {
         bfIndex = 1;
-    }else{
+    }
+    else
+    {
         bfIndex = 2;
     }
     bool forward = bfs[bfIndex].VaryExist(link.c_str());
-    // if(nodeId == 59){
-        // std::cout<< "bfIndex " << bfIndex <<std::endl;
-        // std::cout<< "doForward " << interfaceId <<" " <<nodeb->id <<" " << forward<< std::endl;
+    if (forward && session->isPositiveLink(nodea->id, nodeb->id) == false
+            && erroredge.find(std::make_pair(nodea->id,nodeb->id)) == erroredge.end())
+    {
+        erroredge.insert(std::make_pair(nodea->id,nodeb->id));
+        std::cout << "flow id " << session << " errorNum " << erroredge.size() <<" "<<
+            nodea->id<<" "<< nodeb->id  << std::endl;
+    }
+    // if(nodeId == 62){
+    //     std::cout<< "bfIndex " << bfIndex <<std::endl;
+    //     std::cout<< "doForward " << interfaceId <<" " <<nodeb->id <<" " << forward<< std::endl;
     // }
-    return bfs[bfIndex].VaryExist(link.c_str());
+    return forward;
 }
 
 // 假设假阳性端口到达的节点为阴性节点。
 // 真实情况下，有少部分假阳性端口到达的节点为阳性节点.
 // 因此我们计算出来的值偏小
-double getRedu(double x, double y, double S, double p[3])
+double
+getRedu(double x, double y, double S, double p[3])
 {
     double F[3] = {0, 0, 0};
     double f[3] = {0, 0, 0};
 
-    int k[3] = {SPINE_NUM, LEAF_NUM - 1 , HOST_PERLEAF_NUM}; // 保存每层节点的下游端口数量
+    int k[3] = {SPINE_NUM, LEAF_NUM - 1, HOST_PERLEAF_NUM}; // 保存每层节点的下游端口数量
     f[0] = fprr(p[0], x, 3);
     f[1] = fprr(p[1], y, 3);
     f[2] = fprr(p[2], S - x - y, 3);
@@ -225,7 +284,8 @@ double getRedu(double x, double y, double S, double p[3])
     return (F[0] + F[1] + F[2]);
 }
 
-std::pair<int, int> getMinXY_by_Enumerate(double S, double p[3])
+std::pair<int, int>
+getMinXY_by_Enumerate(double S, double p[3])
 {
     std::pair<int, int> res;
     double minn = 1e9 + 7;
@@ -251,16 +311,16 @@ std::pair<int, int> getMinXY_by_Enumerate(double S, double p[3])
 
 class SA
 {
-public:
+  public:
     double S;
     double p[3];
-    int k[3] = {SPINE_NUM, LEAF_NUM-1, HOST_PERLEAF_NUM};
+    int k[3] = {SPINE_NUM, LEAF_NUM - 1, HOST_PERLEAF_NUM};
 
     double expectedForwardingCalc(int x, int y)
     {
         double F[] = {0, 0, 0};
         double f[] = {0, 0, 0};
-        
+
         if (x < 1 || x > S)
         {
             return std::numeric_limits<double>::infinity();
@@ -284,7 +344,13 @@ public:
         return F[0] + F[1] + F[2];
     }
 
-    std::pair<int, int> simulated_annealing( double x, double y, double T_max, double T_min, double cooling_rate, double step_size, int iteration_per_temp)
+    std::pair<int, int> simulated_annealing(double x,
+                                            double y,
+                                            double T_max,
+                                            double T_min,
+                                            double cooling_rate,
+                                            double step_size,
+                                            int iteration_per_temp)
     {
         std::srand(std::time(nullptr));
         std::random_device rd;
@@ -293,7 +359,7 @@ public:
 
         int current_x = x, current_y = y;
         double current_energy = expectedForwardingCalc(current_x, current_y);
-    
+
         int best_x = current_x, best_y = current_y;
 
         double best_energy = current_energy;
@@ -338,19 +404,22 @@ public:
     }
 };
 
-
 class SA2
 {
-public:
+  public:
     double S;
     double p[5];
-    int k[5] = {FATTREE_POD/2, (FATTREE_POD/2)*(FATTREE_POD/2),FATTREE_POD-1, FATTREE_POD/2,FATTREE_POD/2};
+    int k[5] = {FATTREE_POD / 2,
+                (FATTREE_POD / 2) * (FATTREE_POD / 2),
+                FATTREE_POD - 1,
+                FATTREE_POD / 2,
+                FATTREE_POD / 2};
 
     double expectedForwardingCalc(int x, int y)
     {
         double F[] = {0, 0, 0};
         double f[] = {0, 0, 0};
-        
+
         if (x < 1 || x > S)
         {
             return std::numeric_limits<double>::infinity();
@@ -364,9 +433,9 @@ public:
             return std::numeric_limits<double>::infinity();
         }
 
-        f[0] = fprr(p[0]+p[1], x, 3);
+        f[0] = fprr(p[0] + p[1], x, 3);
         f[1] = fprr(p[2], y, 3);
-        f[2] = fprr(p[3]+p[4], S - x - y, 3);
+        f[2] = fprr(p[3] + p[4], S - x - y, 3);
 
         F[0] = (k[0] - p[0]) * f[0];
         F[1] = ((F[0] + p[0]) * k[1] - p[1]) * f[0];
@@ -376,7 +445,13 @@ public:
         return F[0] + F[1] + F[2] + F[3] + F[4];
     }
 
-    std::pair<int, int> simulated_annealing( double x, double y, double T_max, double T_min, double cooling_rate, double step_size, int iteration_per_temp)
+    std::pair<int, int> simulated_annealing(double x,
+                                            double y,
+                                            double T_max,
+                                            double T_min,
+                                            double cooling_rate,
+                                            double step_size,
+                                            int iteration_per_temp)
     {
         std::srand(std::time(nullptr));
         std::random_device rd;
@@ -385,7 +460,7 @@ public:
 
         int current_x = x, current_y = y;
         double current_energy = expectedForwardingCalc(current_x, current_y);
-    
+
         int best_x = current_x, best_y = current_y;
 
         double best_energy = current_energy;
@@ -430,7 +505,8 @@ public:
     }
 };
 
-std::pair<int, int> getMinXY_by_simulated_annealing(double S, double p[3])
+std::pair<int, int>
+getMinXY_by_simulated_annealing(double S, double p[3])
 {
     SA sa;
     sa.S = S;
@@ -444,7 +520,13 @@ std::pair<int, int> getMinXY_by_simulated_annealing(double S, double p[3])
     double cooling_rate = 0.95;
     double step_size = 5.0;
     int iteration_per_temp = 200;
-    auto best_state = sa.simulated_annealing( initial_x, initial_y, T_max, T_min, cooling_rate, step_size, iteration_per_temp);
+    auto best_state = sa.simulated_annealing(initial_x,
+                                             initial_y,
+                                             T_max,
+                                             T_min,
+                                             cooling_rate,
+                                             step_size,
+                                             iteration_per_temp);
     double best_energy = sa.expectedForwardingCalc(best_state.first, best_state.second);
     // std::cout << f(29,94) <<std::endl;
     // std::cout << "Optimal solution: (" << best_state.first << ", " << best_state.second << ")\n";
@@ -452,11 +534,13 @@ std::pair<int, int> getMinXY_by_simulated_annealing(double S, double p[3])
     return std::make_pair(best_state.first, best_state.second);
 }
 
-std::pair<int, int> getMinXY_by_simulated_annealing2(double S, double p[5])
+std::pair<int, int>
+getMinXY_by_simulated_annealing2(double S, double p[5])
 {
     SA2 sa;
     sa.S = S;
-    for(int i=0;i<5;i++){
+    for (int i = 0; i < 5; i++)
+    {
         sa.p[i] = p[i];
     }
     int initial_x = 10.0, initial_y = 10.0;
@@ -464,8 +548,14 @@ std::pair<int, int> getMinXY_by_simulated_annealing2(double S, double p[5])
     double T_min = 0.001;
     double cooling_rate = 0.95;
     double step_size = 5.0;
-    int iteration_per_temp = 200;
-    auto best_state = sa.simulated_annealing( initial_x, initial_y, T_max, T_min, cooling_rate, step_size, iteration_per_temp);
+    int iteration_per_temp = 300;
+    auto best_state = sa.simulated_annealing(initial_x,
+                                             initial_y,
+                                             T_max,
+                                             T_min,
+                                             cooling_rate,
+                                             step_size,
+                                             iteration_per_temp);
     double best_energy = sa.expectedForwardingCalc(best_state.first, best_state.second);
     // std::cout << f(29,94) <<std::endl;
     // std::cout << "Optimal solution: (" << best_state.first << ", " << best_state.second << ")\n";
@@ -474,11 +564,12 @@ std::pair<int, int> getMinXY_by_simulated_annealing2(double S, double p[5])
 }
 
 // 这里产生包头的三个BF
-void generateLeafSpinePacket(Topolopy &topolopy, Session &session, MPacket &packet)
+void
+generateLeafSpinePacket(Topolopy& topolopy, Session& session, MPacket& packet)
 {
     int n = topolopy.nodes.size(); // 拓扑中节点总数
-    std::vector<std::pair<int, int> > positiveLink[3];
-    std::vector<std::pair<int, int> > negativeLink[3];
+    std::vector<std::pair<int, int>> positiveLink[3];
+    std::vector<std::pair<int, int>> negativeLink[3];
     for (int i = 0; i < 3; i++)
     {
         positiveLink[i].clear();
@@ -487,7 +578,7 @@ void generateLeafSpinePacket(Topolopy &topolopy, Session &session, MPacket &pack
 
     for (int i = 0; i < n; i++)
     {
-        Mnode *node = topolopy.nodes[i];
+        Mnode* node = topolopy.nodes[i];
         if (!session.isPostiveNode[i])
             continue;
         if (node->type.compare("host") == 0)
@@ -542,7 +633,8 @@ void generateLeafSpinePacket(Topolopy &topolopy, Session &session, MPacket &pack
         // std::cout<<positiveLink[i].size()<<std::endl;
         for (int j = 0; j < positiveLink[i].size(); j++)
         {
-            std::string s = std::to_string(positiveLink[i][j].first) + " to " + std::to_string(positiveLink[i][j].second);
+            std::string s = std::to_string(positiveLink[i][j].first) + " to " +
+                            std::to_string(positiveLink[i][j].second);
             bf.SetKey(s.c_str());
             // std::cout<<s<<std::endl;
         }
@@ -552,20 +644,27 @@ void generateLeafSpinePacket(Topolopy &topolopy, Session &session, MPacket &pack
 
 // This file contains the implementation of functions related to BloomFilter and packet forwarding.
 // The BloomFilter class provides functions to set keys and check if a key exists in the filter.
-// The generatePacket function generates three BloomFilters based on the positive and negative links in the topology.
-// The forwardPacket function forwards the packet to the next node and checks if the link is positive or negative using the BloomFilters. It also calculates the false positive rate for each BloomFilter.
-void forwardPacket(Topolopy &topolopy, Session &session, MPacket &packet, int &forwardPacket1, double fpr[3])
+// The generatePacket function generates three BloomFilters based on the positive and negative links
+// in the topology. The forwardPacket function forwards the packet to the next node and checks if
+// the link is positive or negative using the BloomFilters. It also calculates the false positive
+// rate for each BloomFilter.
+void
+forwardPacket(Topolopy& topolopy,
+              Session& session,
+              MPacket& packet,
+              int& forwardPacket1,
+              double fpr[3])
 {
-    int correct_forward[3] = {0,0,0};
-    int error_forward[3] = {0,0,0};
-    int forwardTotal[3] = {0,0,0};
+    int correct_forward[3] = {0, 0, 0};
+    int error_forward[3] = {0, 0, 0};
+    int forwardTotal[3] = {0, 0, 0};
     Mes mes[3];
     forwardPacket1 = 0;
     std::queue<Mnode*> que;
     que.push(session.sender);
     while (que.size())
     {
-        Mnode *node = que.front();
+        Mnode* node = que.front();
         int BFIndex = session.getBFIndex(node);
         que.pop();
 
@@ -574,7 +673,7 @@ void forwardPacket(Topolopy &topolopy, Session &session, MPacket &packet, int &f
 
         for (int i = 0; i < node->linkedNodes.size(); i++)
         {
-            Mnode *nextNode = node->linkedNodes[i];
+            Mnode* nextNode = node->linkedNodes[i];
             int a = node->id;
             int b = nextNode->id;
             std::string link = std::to_string(a) + " to " + std::to_string(b);
@@ -582,7 +681,7 @@ void forwardPacket(Topolopy &topolopy, Session &session, MPacket &packet, int &f
 
             if (session.distance[node->id] + 1 != session.distance[nextNode->id])
                 continue;
-            
+
             if (isPosi && node->id == session.sender->id)
             {
                 // forwardPacket1++;
@@ -590,24 +689,25 @@ void forwardPacket(Topolopy &topolopy, Session &session, MPacket &packet, int &f
                 continue;
             }
 
-            if(BFIndex==0&&nextNode->type.compare("host") == 0){ //防止第一跳的leaf交换机的数据包发数据包到主机
+            if (BFIndex == 0 && nextNode->type.compare("host") == 0)
+            { // 防止第一跳的leaf交换机的数据包发数据包到主机
                 continue;
             }
-
 
             if (packet.bfs[BFIndex].VaryExist(link.c_str()))
             {
                 forwardTotal[BFIndex]++;
                 if (isPosi == 0)
                 {
-                    std::cout<<"erroredge "<<a<<" "<<b<<std::endl;
+                    std::cout << "erroredge " << a << " " << b << std::endl;
                     error_forward[BFIndex]++;
                     forwardPacket1++;
 
                     mes[0].fp++;
-                }else {
-
-                    correct_forward[BFIndex] ++;
+                }
+                else
+                {
+                    correct_forward[BFIndex]++;
                 }
                 que.push(nextNode);
             }
@@ -621,4 +721,4 @@ void forwardPacket(Topolopy &topolopy, Session &session, MPacket &packet, int &f
     //  std::cout<<error_forward[0]<<" "<<error_forward[1]<<" "<<error_forward[2]<<std::endl;
 }
 
-}
+} // namespace ns3

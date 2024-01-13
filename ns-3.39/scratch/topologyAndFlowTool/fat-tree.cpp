@@ -12,20 +12,25 @@
 #include <string>
 #include <time.h>
 #include <vector>
+#include <ctime>
 #define maxn 10000
 #define maxm 10000
 #define INF 1e9 + 7
-#define FATTREE_POD 8
+#define FATTREE_POD 10
+#define SESSION_NUM 100
+#define PACKET_NUM_MIN 2
+#define PACKET_NUM_MAX 100
 using namespace std;
 
 int k = FATTREE_POD, pod = FATTREE_POD;
 int coreSwitch[maxm], aggrSwitch[maxn][maxm], edgeSwitch[maxn][maxm], server[maxm];
 int sender;
-set<int> receiver;
 vector<int> ve[maxn];
 string type[maxn];
 int podID[maxn];
-
+int getRange(int minn, int maxx){
+    return minn + rand() % (maxx - minn + 1);
+}
 int main()
 {
     int id = -1;
@@ -68,8 +73,7 @@ int main()
             podID[id] = i;
         }
     }
-   
-
+    // ###################################### 生成拓扑 ################################
     std::ofstream out_file;
     out_file.open("topology.txt");
     //输出节点数量 和 边的数量
@@ -108,5 +112,44 @@ int main()
         }
     }
     out_file.close();
+    // ###################################### 生成流量 ################################
+
+    // 3
+    // 125 4 1 10 1
+    // 126 131 206 197
+    out_file.open("flow.txt");
+    out_file<<SESSION_NUM<<"\n";
+    srand(79979);
+    for(int i = 0 ;i< SESSION_NUM; i++ ){
+        set<int> receiver;
+        int hostNum = serverIndex - 1;
+        int sender = server[ rand() % hostNum + 1]; 
+        int receiveNum = ceil(0.4 * hostNum);
+        int appStartTime = 1;
+        int appEndTime = 1000;
+        int packetNum = getRange(PACKET_NUM_MIN, PACKET_NUM_MAX);
+        out_file<<sender<<" " << receiveNum <<" " << appStartTime <<" "<< appEndTime << " " << packetNum <<"\n";
+        while(receiver.size() != receiveNum){
+            int receiverTmp = server[ rand() % hostNum + 1];
+            if(receiverTmp == sender) {
+                continue;
+            }else{
+                receiver.insert(receiverTmp);
+            }
+        }
+        for(auto it = receiver.begin(); it!= receiver.end(); ){
+            out_file<<(*it);
+            it++;
+            if(it == receiver.end()){
+                out_file<<"\n";
+            }else{
+                out_file<<" ";
+            }
+        }
+    }
+
+
+    out_file.close();
+
     return 0;
 }

@@ -17,7 +17,7 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("test-czh");
+NS_LOG_COMPONENT_DEFINE("test-orca");
 
 std::map<std::string, std::string> read_config(std::string config_path) {
     std::ifstream config_file(config_path); // 打开文件
@@ -69,7 +69,8 @@ int main(int argc, char* argv[])
     internet.SetRoutingHelper(listRouting);
     internet.Install(nodes);
     
-    
+    topolopy->pod = std::stoi(config_values["POD_NUM"]);
+    std::cout<<"pod = " << topolopy->pod << std::endl;
     for (int i = 0; i < nodeNum; i++){
         Ptr<Ipv4> ipv4 = nodes.Get(i)->GetObject<Ipv4>();
         ns3::Ptr<ns3::Ipv4CzhRouting> routing = ipv4CzhRoutingHelper.GetCzhRouting(ipv4);
@@ -90,14 +91,8 @@ int main(int argc, char* argv[])
         // std::cout<< type<< std::endl;
         topolopy->nodes[nodeId]->pod = pod;
         topolopy->nodes[nodeId]->type = type;
-
-        if(type.compare("host") != 0){
-            topolopy->switchs.push_back(topolopy->nodes[nodeId]);
-        }else{
-            topolopy->hosts.push_back(topolopy->nodes[nodeId]);
-        }
     }
-   
+
     for (int i = 0; i < linkNum; i++){
         int a, b;
         p2p.SetDeviceAttribute("DataRate", StringValue(config_values["DATA_RATE"]));
@@ -148,8 +143,7 @@ int main(int argc, char* argv[])
             serverApps.Start(Seconds(start_time));
             serverApps.Stop(Seconds(stop_time));
         }
-        routing->addNewSession(port, src, dsts,"Elmo");
-        (*(routing->sessions))[i].elmoPacket = new ElmoPacket( &(*(routing->sessions))[i]);
+        routing->addNewSession(port, src, dsts, "Orca");
     }
 
     // std::cout<<"topolopy" << topolopy << std::endl; 

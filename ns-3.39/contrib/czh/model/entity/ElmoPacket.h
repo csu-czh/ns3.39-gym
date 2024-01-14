@@ -25,6 +25,7 @@ public:
 class ElmoPacket
 {
   public:
+    int sumBits;
     unsigned long long  leafUp; // len is the number of leaf downports. It is no error
     // unsinged unsigned long long  coreDown; // len is the number of pods. It is no error
     std::vector<Rule> aggrPRules; // maxlen is the number of pods

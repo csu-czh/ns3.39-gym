@@ -1,0 +1,6 @@
+FLOW_FILE   ./scratch/config/flow-orca.txt
+TOPOLOGY_FILE   ./scratch/config/topology-orca.txt
+MAX_QUEUE_LEN    300000p
+DATA_RATE    5Gbps
+DELAY   1us
+POD_NUM 8

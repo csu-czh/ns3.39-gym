@@ -16,7 +16,7 @@
 #define maxn 10000
 #define maxm 10000
 #define INF 1e9 + 7
-#define FATTREE_POD 10
+#define FATTREE_POD 6
 #define SESSION_NUM 100
 #define PACKET_NUM_MIN 2
 #define PACKET_NUM_MAX 100
@@ -78,7 +78,7 @@ int main()
     out_file.open("topology.txt");
     //输出节点数量 和 边的数量
     out_file << id + 1<< " " << k * k * k / 4 * 3 << endl;
-    for(int i = 0; i < id;i++){
+    for(int i = 0; i < id + 1;i++){
         out_file << i << " " << podID[i] << " " << type[i] << endl;
     }
     int sIndex = 0;

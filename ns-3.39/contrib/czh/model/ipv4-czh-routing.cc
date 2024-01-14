@@ -542,6 +542,8 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                     (*sessions)[flowId].m_links.end())
                 {
                     isForwardInterface = 1;
+                }else{
+                    isForwardInterface = 0;
                 }
             }
             else if (multicastProtocol.compare("RSBF") == 0)
@@ -584,6 +586,48 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                 else
                 {
                     isForwardInterface = 0;
+                }
+            }else if(multicastProtocol.compare("Orca") == 0){
+                std::string type = topolopy->nodes[nodeId]->type;
+                if(type.compare("agent") == 0){
+                    // std::cout<<"type: "<<topolopy->nodes[nodeId]->type <<" "<< nodeId<<std::endl;
+                    int32_t outInterface = 1; // 直接发出去
+                    Ipv4Address outAddress = m_ipv4->GetAddress(outInterface, 0).GetLocal();
+                    // std::cout<<"inputInterface "<< interface<<std::endl;
+                    // std::cout<<"inputAddress " << inputAddress <<std::endl;
+                    // std::cout<<"outInterface "<< outInterface<<std::endl;
+                    // std::cout<<"outAddress " << outAddress <<std::endl;
+                    Ptr<Ipv4Route> rtentry = Create<Ipv4Route>();
+                    rtentry->SetGateway(getPeerAddress(outAddress));
+                    rtentry->SetOutputDevice(m_ipv4->GetNetDevice(outInterface));
+                    rtentry->SetDestination(ipHeader.GetDestination() );
+                    rtentry->SetSource(m_ipv4->GetAddress(interface, 0).GetLocal());
+                    ucb(rtentry, p, ipHeader); // unicast forwarding callback
+                    return true;
+
+                }else if(type.compare("leaf") == 0 && (m_ipv4->GetInterfaceForDevice(idev) <= topolopy->pod / 2 )){
+                    // std::cout<<"agent"<<std::endl;
+                    int32_t outInterface = topolopy->pod + 1; // 直接发出去
+                    Ipv4Address outAddress = m_ipv4->GetAddress(outInterface, 0).GetLocal();
+                    // std::cout<<"inputInterface "<< interface<<std::endl;
+                    // std::cout<<"inputAddress " << inputAddress <<std::endl;
+                    // std::cout<<"outInterface "<< outInterface<<std::endl;
+                    // std::cout<<"outAddress " << outAddress <<std::endl;
+                    Ptr<Ipv4Route> rtentry = Create<Ipv4Route>();
+                    rtentry->SetGateway(getPeerAddress(outAddress));
+                    rtentry->SetOutputDevice(m_ipv4->GetNetDevice(outInterface));
+                    rtentry->SetDestination(ipHeader.GetDestination() );
+                    rtentry->SetSource(m_ipv4->GetAddress(interface, 0).GetLocal());
+                    ucb(rtentry, p, ipHeader); // unicast forwarding callback
+                    return true;
+                }else{
+                    if ((*sessions)[flowId].m_links.find(make_pair(nodeId, i - 1)) !=
+                        (*sessions)[flowId].m_links.end())
+                    {
+                        isForwardInterface = 1;
+                    }else{
+                        isForwardInterface = 0;
+                    }
                 }
             }
             // std::cout<<nodeId<<" "<<i-1<<std::endl;

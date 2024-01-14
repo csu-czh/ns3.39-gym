@@ -142,8 +142,8 @@ int main(int argc, char* argv[])
             serverApps.Start(Seconds(start_time));
             serverApps.Stop(Seconds(stop_time));
         }
-        routing->addNewSession(port, src, dsts);
-        (*(routing->sessions))[i].mpacket = new MPacket( &(*(routing->sessions))[i], "RSBF");
+        routing->addNewSession(port, src, dsts, "RSBF");
+        (*(routing->sessions))[i].mpacket = new MPacket( &(*(routing->sessions))[i]);
         std::cout<<"mpacket "<< ( *(routing->sessions))[0].mpacket<<std::endl;
     }
 

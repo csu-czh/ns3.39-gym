@@ -1,21 +1,21 @@
-#ifndef _MPACKET_H
-#define _MPACKET_H
-#include "BloomFilter.h"
+#ifndef _LIPSINPacket_H
+#define _LIPSINPacket_H
+
 #include "../tools/GLOBAL.h"
 #include "MNode.h"
 #include "Session.h"
 #include "Topolopy.h"
-
 namespace ns3
 {
+
 class Session;
 
-class MPacket
+class LIPSINPacket
 {
   public:
-    BloomFilter bfs[3];
+    BloomFilter bf;
     std::set<PairII> erroredge;
-    MPacket(Session* session);
+    LIPSINPacket(Session* session);
     void generateLabelFattree(Session* session);
     void generateLabelLeafspine();
     void init(Session* session);

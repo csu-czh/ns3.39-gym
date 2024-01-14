@@ -318,7 +318,7 @@ UdpOrcaClient::HandleRead(Ptr<Socket> socket)
                     int64_t fct = currentTimeNanoSeconds - 1000000000;
                     std::cout << "\n\n";
                     std::cout << "Finsh flowid : " << m_peerPort - 1000 << ", "
-                              << "Fct = " << currentTimeNanoSeconds - 1000000000 << "ns"
+                              << "Fct = " << currentTimeNanoSeconds - 1000000000 << " ns"
                               << ", "
                               << "Rate: " << 1.0 * m_count * m_size * 8 / fct << " Gbps"
                               << std::endl;

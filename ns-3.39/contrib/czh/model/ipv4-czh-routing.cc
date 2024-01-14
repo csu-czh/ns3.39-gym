@@ -535,7 +535,7 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
         for (int i = 1; i < m_ipv4->GetNInterfaces(); i++)
         {
             bool isForwardInterface = 0;
-            std::string multicastProtocol = (*sessions)[flowId].mpacket->multicastProtocol;
+            std::string multicastProtocol = (*sessions)[flowId].multicastProtocol;
             if (multicastProtocol.compare("Yeti") == 0)
             {
                 if ((*sessions)[flowId].m_links.find(make_pair(nodeId, i - 1)) !=
@@ -546,7 +546,7 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
             }
             else if (multicastProtocol.compare("RSBF") == 0)
             {
-                if ((*sessions)[flowId].mpacket->doForwardRSBF(nodeId,
+                if ((*sessions)[flowId].mpacket->doForward(nodeId,
                                                                i - 1,
                                                                topolopy,
                                                                &((*sessions)[flowId])))
@@ -560,7 +560,7 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
             }
             else if (multicastProtocol.compare("Elmo") == 0)
             {
-                if ((*sessions)[flowId].mpacket->doForwardRSBF(nodeId,
+                if ((*sessions)[flowId].elmoPacket->doForward(nodeId,
                                                                i - 1,
                                                                topolopy,
                                                                &((*sessions)[flowId])))
@@ -574,7 +574,7 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
             }
             else if (multicastProtocol.compare("LIPSIN") == 0)
             {
-                if ((*sessions)[flowId].mpacket->doForwardRSBF(nodeId,
+                if ((*sessions)[flowId].lipsinPacket->doForward(nodeId,
                                                                i - 1,
                                                                topolopy,
                                                                &((*sessions)[flowId])))
@@ -814,9 +814,9 @@ Ipv4CzhRouting::getPeerAddress(Ipv4Address address)
 };
 
 void
-Ipv4CzhRouting::addNewSession(int port, int src, std::vector<int> dst)
+Ipv4CzhRouting::addNewSession(int port, int src, std::vector<int> dst, std::string multicastProtocol)
 {
-    Session session = Session(src, dst, topolopy);
+    Session session = Session(src, dst, topolopy, multicastProtocol);
     (*sessions)[port - 1001] = session;
 }
 } // namespace ns3

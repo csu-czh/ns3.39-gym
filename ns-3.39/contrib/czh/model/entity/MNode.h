@@ -11,7 +11,6 @@ namespace ns3
     int pod;
     std::string type;
     std::vector< Mnode* > linkedNodes;
-    
   };
 }
 #endif

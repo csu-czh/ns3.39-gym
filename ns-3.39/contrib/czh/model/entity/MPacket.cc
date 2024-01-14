@@ -47,58 +47,13 @@ class Mes
     }
 };
 
-uint
-BloomFilter::RSHash(const char* str, int seed)
+MPacket::MPacket(Session* session)
 {
-    // unsigned int b = 378551;
-    uint a = 63689;
-    uint hash = 0;
-    while (*str)
-    {
-        hash = hash * a + (*str++);
-        a *= seed;
-    }
-    return (hash & 0x7FFFFFFF);
+    init(session);
 }
 
 void
-BloomFilter::SetKey(const char* str)
-{
-    for (int i = 0; i < m_k; ++i)
-    {
-        int pos = static_cast<int>(RSHash(str, arrays[i])) % m_m;
-        bit[pos] = 1;
-    }
-}
-
-int
-BloomFilter::VaryExist(const char* str)
-{
-    for (int i = 0; i < m_k; ++i)
-    {
-        int pos = static_cast<int>(RSHash(str, arrays[i])) % m_m;
-        if (bit[pos] == 0)
-        {
-            return 0;
-        }
-    }
-    return 1;
-}
-
-MPacket::MPacket(Session* session, std::string _multicastProtocol)
-{
-    multicastProtocol = _multicastProtocol;
-    if (multicastProtocol.compare("RSBF") == 0)
-    {
-        initRSBF(session);
-    }
-    else
-    {
-    }
-}
-
-void
-MPacket::initRSBF(Session* session)
+MPacket::init(Session* session)
 {
     std::cout << "RSBF" << std::endl;
     if (TOPOLOPY_TYPE == 1)
@@ -223,7 +178,7 @@ MPacket::generateLabelLeafspine()
 }
 
 bool
-MPacket::doForwardRSBF(int nodeId, int interfaceId, Topolopy* topology, Session* session)
+MPacket::doForward(int nodeId, int interfaceId, Topolopy* topology, Session* session)
 {
     Mnode* nodea = topology->nodes[nodeId];
     Mnode* nodeb = nodea->linkedNodes[interfaceId];

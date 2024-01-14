@@ -18,6 +18,9 @@ build_lib(
                  model/udp-orca-server.cc
                  model/entity/MNode.cc
                  model/entity/MPacket.cc
+                 model/entity/BloomFilter.cc
+                 model/entity/ElmoPacket.cc
+                 model/entity/LIPSINPacket.cc
                  model/entity/Session.cc
                  model/entity/Topolopy.cc
                  helper/ipv4-orca-routing-helper.cc
@@ -28,8 +31,11 @@ build_lib(
                  model/ipv4-czh-routing.h
                  model/udp-orca-client.h
                  model/udp-orca-server.h
+                 model/entity/BloomFilter.h
                  model/entity/MNode.h
                  model/entity/MPacket.h
+                 model/entity/ElmoPacket.h
+                 model/entity/LIPSINPacket.h
                  model/entity/Session.h
                  model/entity/Topolopy.h
                  helper/ipv4-orca-routing-helper.h

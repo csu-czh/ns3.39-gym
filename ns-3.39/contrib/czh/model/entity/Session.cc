@@ -11,8 +11,9 @@ Session::Session()
 {
 }
 
-Session::Session(int src, std::vector<int> dst, Topolopy* topolopy)
+Session::Session(int src, std::vector<int> dst, Topolopy* topolopy, std::string multicastProtocol)
 {
+    this->multicastProtocol = multicastProtocol;
     this->topolopy = topolopy;
     sender = topolopy->nodes[src];
     std::cout<<"sender id " << sender->id<<std::endl;

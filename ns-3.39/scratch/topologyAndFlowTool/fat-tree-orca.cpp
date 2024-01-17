@@ -17,9 +17,9 @@
 #define maxm 10000
 #define INF 1e9 + 7
 #define FATTREE_POD 6
-#define SESSION_NUM 100
-#define PACKET_NUM_MIN 2
-#define PACKET_NUM_MAX 100
+#define SESSION_NUM 30
+#define PACKET_NUM_MIN 100
+#define PACKET_NUM_MAX 1000
 using namespace std;
 
 int k = FATTREE_POD, pod = FATTREE_POD;
@@ -140,13 +140,13 @@ main()
     // 126 131 206 197
     out_file.open("flow-orca.txt");
     out_file << SESSION_NUM << "\n";
-    srand(79979);
+    srand(7919);
     for (int i = 0; i < SESSION_NUM; i++)
     {
         set<int> receiver;
         int hostNum = serverIndex - 1;
         int sender = server[rand() % hostNum + 1];
-        int receiveNum = ceil(0.4 * hostNum);
+        int receiveNum = ceil(0.03 * hostNum);
         int appStartTime = 1;
         int appEndTime = 1000;
         int packetNum = getRange(PACKET_NUM_MIN, PACKET_NUM_MAX);

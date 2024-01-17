@@ -7,6 +7,7 @@ namespace ns3
 {
 void dijkstra(int st, int dist[], Topolopy* topolopy);
 
+
 Session::Session()
 {
 }
@@ -50,19 +51,20 @@ Session::Session(int src, std::vector<int> dst, Topolopy* topolopy, std::string 
         for (u_int32_t j = 0; j < now->linkedNodes.size(); j++)
         {
             // int x = j;
-            int x = (j + tmp) % (now->linkedNodes.size());
+            int x = (j + tmp + 2) % (now->linkedNodes.size());
             int to = now->linkedNodes[x]->id;
             if (distance[now->id] == distance[to] + 1)
             {
                 for (u_int32_t k = 0; k < topolopy->nodes[to]->linkedNodes.size(); k++)
                 {
+                    
                     if (topolopy->nodes[to]->linkedNodes[k]->id == now->id)
                     {
                         m_links.insert(std::make_pair(to, k));
                         postiveLink.insert(std::make_pair(to, now->id));
                         std::cout << "insert positive link a,to " << to << " " << now->id << " "
                                   << distance[now->id] << std::endl;
-                        // std::cout<< "insert positive link a,link" <<to <<" " << k << std::endl;
+                        std::cout<< "insert positive m_link a,link" <<to <<" " << k <<" " << this <<std::endl;
                     }
                 }
 

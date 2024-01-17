@@ -1,6 +1,6 @@
-FLOW_FILE   ./scratch/config/flow-czh.txt
-TOPOLOGY_FILE   ./scratch/config/topology-czh.txt
+FLOW_FILE   ./scratch/config/flow.txt
+TOPOLOGY_FILE   ./scratch/config/topology.txt
 MAX_QUEUE_LEN    300000p
-DATA_RATE    5Gbps
-DELAY   1us
-POD_NUM 8
+DATA_RATE    2Gbps
+DELAY   5us
+POD_NUM 6

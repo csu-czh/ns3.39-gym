@@ -30,7 +30,7 @@
 #include "ns3/socket-factory.h"
 #include "ns3/socket.h"
 #include "ns3/uinteger.h"
-
+#include "ns3/ipv4-header.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -280,6 +280,13 @@ UdpOrcaClient::HandleRead(Ptr<Socket> socket)
     {
         if (InetSocketAddress::IsMatchingType(from))
         {
+            // packet->ToString();
+            // Ipv4Header ipv4Header;
+            // packet->PeekHeader(ipv4Header);
+            // SeqTsHeader seqTs;
+            // packet->PeekHeader(seqTs);
+
+            // std::cout<<"receiver seqTs : "<< packet->ToString()<<std::endl;
             // std::cout<<m_ack_num<<std::endl;
 
             Ipv4Address ipv4Addr = InetSocketAddress::ConvertFrom(from).GetIpv4();

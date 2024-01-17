@@ -491,9 +491,12 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                            const LocalDeliverCallback& lcb,
                            const ErrorCallback& ecb)
 {
+
     // czh 表示为ack数据包，走global router
     if (p->GetSize() < 200)
         return false;
+    
+    // std::cout<<"p-to "<< p->ToString()<<std::endl;
     // Check if input device supports IP
     NS_ASSERT(m_ipv4);
     NS_ASSERT(m_ipv4->GetInterfaceForDevice(idev) >= 0);
@@ -518,7 +521,7 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
     int32_t interface = m_ipv4->GetInterfaceForDevice(idev);
     int nodeId = idev->GetNode()->GetId();
 
-    // std::cout<<"flowId "<< flowId <<"node : " << nodeId << " receiver a packet "<< std::endl;
+    // std::cout << "flowId " << flowId << "node : " << nodeId << " receiver a packet " << std::endl;
     // 到达了主机
     if (!lcb.IsNull() &&
         (*sessions)[flowId].receivers.find(nodeId) != (*sessions)[flowId].receivers.end())
@@ -541,17 +544,20 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                 if ((*sessions)[flowId].m_links.find(make_pair(nodeId, i - 1)) !=
                     (*sessions)[flowId].m_links.end())
                 {
+                    // std::cout<<nodeId << " " << i - 1 <<std::endl;
                     isForwardInterface = 1;
-                }else{
+                }
+                else
+                {
                     isForwardInterface = 0;
                 }
             }
             else if (multicastProtocol.compare("RSBF") == 0)
             {
                 if ((*sessions)[flowId].mpacket->doForward(nodeId,
-                                                               i - 1,
-                                                               topolopy,
-                                                               &((*sessions)[flowId])))
+                                                           i - 1,
+                                                           topolopy,
+                                                           &((*sessions)[flowId])))
                 {
                     isForwardInterface = 1;
                 }
@@ -563,9 +569,9 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
             else if (multicastProtocol.compare("Elmo") == 0)
             {
                 if ((*sessions)[flowId].elmoPacket->doForward(nodeId,
-                                                               i - 1,
-                                                               topolopy,
-                                                               &((*sessions)[flowId])))
+                                                              i - 1,
+                                                              topolopy,
+                                                              &((*sessions)[flowId])))
                 {
                     isForwardInterface = 1;
                 }
@@ -577,9 +583,9 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
             else if (multicastProtocol.compare("LIPSIN") == 0)
             {
                 if ((*sessions)[flowId].lipsinPacket->doForward(nodeId,
-                                                               i - 1,
-                                                               topolopy,
-                                                               &((*sessions)[flowId])))
+                                                                i - 1,
+                                                                topolopy,
+                                                                &((*sessions)[flowId])))
                 {
                     isForwardInterface = 1;
                 }
@@ -587,9 +593,13 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                 {
                     isForwardInterface = 0;
                 }
-            }else if(multicastProtocol.compare("Orca") == 0){
+            }
+            else if (multicastProtocol.compare("Orca") == 0)
+            {
                 std::string type = topolopy->nodes[nodeId]->type;
-                if(type.compare("agent") == 0){
+                if (type.compare("agent") == 0)
+                {
+                    // std::cout<<"agent -> leaf"<<std::endl;
                     // std::cout<<"type: "<<topolopy->nodes[nodeId]->type <<" "<< nodeId<<std::endl;
                     int32_t outInterface = 1; // 直接发出去
                     Ipv4Address outAddress = m_ipv4->GetAddress(outInterface, 0).GetLocal();
@@ -600,14 +610,17 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                     Ptr<Ipv4Route> rtentry = Create<Ipv4Route>();
                     rtentry->SetGateway(getPeerAddress(outAddress));
                     rtentry->SetOutputDevice(m_ipv4->GetNetDevice(outInterface));
-                    rtentry->SetDestination(ipHeader.GetDestination() );
+                    rtentry->SetDestination(ipHeader.GetDestination());
                     rtentry->SetSource(m_ipv4->GetAddress(interface, 0).GetLocal());
                     ucb(rtentry, p, ipHeader); // unicast forwarding callback
                     return true;
-
-                }else if(type.compare("leaf") == 0 && (m_ipv4->GetInterfaceForDevice(idev) <= topolopy->pod / 2 )){
-                    // std::cout<<"agent"<<std::endl;
-                    int32_t outInterface = topolopy->pod + 1; // 直接发出去
+                }
+                else if (type.compare("edge") == 0 &&
+                         (m_ipv4->GetInterfaceForDevice(idev) <= topolopy->pod / 2))
+                {
+                    // std::cout<<"leaf - > agent"<<std::endl;
+                    int32_t outInterface = topolopy->pod +1; // 发到agent
+                    // std::cout<<"outInterface " << outInterface << std::endl;
                     Ipv4Address outAddress = m_ipv4->GetAddress(outInterface, 0).GetLocal();
                     // std::cout<<"inputInterface "<< interface<<std::endl;
                     // std::cout<<"inputAddress " << inputAddress <<std::endl;
@@ -616,16 +629,26 @@ Ipv4CzhRouting::RouteInput(Ptr<const Packet> p,
                     Ptr<Ipv4Route> rtentry = Create<Ipv4Route>();
                     rtentry->SetGateway(getPeerAddress(outAddress));
                     rtentry->SetOutputDevice(m_ipv4->GetNetDevice(outInterface));
-                    rtentry->SetDestination(ipHeader.GetDestination() );
+                    rtentry->SetDestination(ipHeader.GetDestination());
                     rtentry->SetSource(m_ipv4->GetAddress(interface, 0).GetLocal());
                     ucb(rtentry, p, ipHeader); // unicast forwarding callback
                     return true;
-                }else{
+                }
+                else
+                {
+
                     if ((*sessions)[flowId].m_links.find(make_pair(nodeId, i - 1)) !=
                         (*sessions)[flowId].m_links.end())
                     {
+                        // std::cout<<"m_ipv4->GetInterfaceForDevice(idev)
+                        // "<<m_ipv4->GetInterfaceForDevice(idev)<<" "<< type <<std::endl;
+                        // m_ipv4->GetInterfaceForDevice(idev)
+                        //  std::cout<<"normal "<< nodeId <<" "<< i - 1 <<" " <<
+                        //  &((*sessions)[flowId])<<std::endl;
                         isForwardInterface = 1;
-                    }else{
+                    }
+                    else
+                    {
                         isForwardInterface = 0;
                     }
                 }
@@ -858,9 +881,12 @@ Ipv4CzhRouting::getPeerAddress(Ipv4Address address)
 };
 
 void
-Ipv4CzhRouting::addNewSession(int port, int src, std::vector<int> dst, std::string multicastProtocol)
+Ipv4CzhRouting::addNewSession(int port,
+                              int src,
+                              std::vector<int> dst,
+                              std::string multicastProtocol)
 {
     Session session = Session(src, dst, topolopy, multicastProtocol);
-    (*sessions)[port - 1001] = session;
+    (*sessions)[port - 1001] = std::move(session);
 }
 } // namespace ns3

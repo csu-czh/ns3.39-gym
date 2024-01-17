@@ -12,33 +12,41 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
-#include <string>
 #include <map>
+#include <string>
 
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("test-orca");
 
-std::map<std::string, std::string> read_config(std::string config_path) {
-    std::ifstream config_file(config_path); // 打开文件
+std::map<std::string, std::string>
+read_config(std::string config_path)
+{
+    std::ifstream config_file(config_path);           // 打开文件
     std::map<std::string, std::string> config_values; // 存储配置项的字典
     std::string key;
     std::string value;
 
-    std::cout<< "config_path" << "\t\t\t" << config_path << std::endl;
-    if (config_file.is_open()) {
-        while (config_file >> key >> value) { // 读取每行的键和值
+    std::cout << "config_path"
+              << "\t\t\t" << config_path << std::endl;
+    if (config_file.is_open())
+    {
+        while (config_file >> key >> value)
+        { // 读取每行的键和值
             config_values[key] = value;
-            std::cout<< key << "\t\t\t" << value<< std::endl;
+            std::cout << key << "\t\t\t" << value << std::endl;
         }
         config_file.close(); // 关闭文件
-    } else {
+    }
+    else
+    {
         std::cout << "Unable to open file" << std::endl;
     }
     return config_values;
 }
 
-int main(int argc, char* argv[])
+int
+main(int argc, char* argv[])
 {
     std::ifstream topof, flowf;
     NodeContainer nodes;
@@ -51,49 +59,53 @@ int main(int argc, char* argv[])
     PointToPointHelper p2p;
     Ipv4AddressHelper ipv4;
     Topolopy* topolopy = new Topolopy();
-    std::map<int,Session> sessions; 
+    std::map<int, Session> sessions;
     int nodeNum;
     int linkNum;
     int flowNum;
-    
+
     cmd.Parse(argc, argv);
-    config_values = read_config("./scratch/config/setting-czh.txt");
+    config_values = read_config("./scratch/config/setting-orca.txt");
     topof.open(config_values["TOPOLOGY_FILE"]);
     topof >> nodeNum >> linkNum;
     flowf.open(config_values["FLOW_FILE"]);
     flowf >> flowNum;
     nodes.Create(nodeNum);
-    
+
     listRouting.Add(ipv4CzhRoutingHelper, 1);
     listRouting.Add(globalRouting, 0);
     internet.SetRoutingHelper(listRouting);
     internet.Install(nodes);
-    
+
     topolopy->pod = std::stoi(config_values["POD_NUM"]);
-    std::cout<<"pod = " << topolopy->pod << std::endl;
-    for (int i = 0; i < nodeNum; i++){
+    std::cout << "pod = " << topolopy->pod << std::endl;
+    for (int i = 0; i < nodeNum; i++)
+    {
         Ptr<Ipv4> ipv4 = nodes.Get(i)->GetObject<Ipv4>();
         ns3::Ptr<ns3::Ipv4CzhRouting> routing = ipv4CzhRoutingHelper.GetCzhRouting(ipv4);
         routing->topolopy = topolopy;
         routing->sessions = &sessions;
     }
-    
-    for (int i = 0; i < nodeNum; i++){
+
+    for (int i = 0; i < nodeNum; i++)
+    {
         Mnode* node = new Mnode();
         node->id = i;
         topolopy->nodes.push_back(node);
     }
-    for (int i = 0; i < nodeNum; i++){
+    for (int i = 0; i < nodeNum; i++)
+    {
         int nodeId;
         int pod;
         std::string type;
-        topof>>nodeId>>pod>>type;
+        topof >> nodeId >> pod >> type;
         // std::cout<< type<< std::endl;
         topolopy->nodes[nodeId]->pod = pod;
         topolopy->nodes[nodeId]->type = type;
     }
 
-    for (int i = 0; i < linkNum; i++){
+    for (int i = 0; i < linkNum; i++)
+    {
         int a, b;
         p2p.SetDeviceAttribute("DataRate", StringValue(config_values["DATA_RATE"]));
         p2p.SetChannelAttribute("Delay", StringValue(config_values["DELAY"]));
@@ -111,7 +123,8 @@ int main(int argc, char* argv[])
 
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
-    for (int i = 0; i < flowNum; i++){
+    for (int i = 0; i < flowNum; i++)
+    {
         std::vector<int> dsts;
         int src, dstNum, maxPacketCount;
         double start_time, stop_time;
@@ -121,23 +134,27 @@ int main(int argc, char* argv[])
         // ipv4 代表ipv4网络协议栈
         Ptr<Ipv4> ipv4 = nodes.Get(src)->GetObject<Ipv4>();
         ns3::Ptr<ns3::Ipv4CzhRouting> routing = ipv4CzhRoutingHelper.GetCzhRouting(ipv4);
-        Ipv4Address clientAddress = ipv4->GetAddress(1, 0).GetLocal(); // GetAddress(0,0) is the loopback 127.0.0.1
+        Ipv4Address clientAddress =
+            ipv4->GetAddress(1, 0).GetLocal(); // GetAddress(0,0) is the loopback 127.0.0.1
         ApplicationContainer clientApps;
         Ipv4Address serverAddress;
         UdpOrcaClientHelper client(Ipv4Address("0.0.0.0"), port); // multicast address
         client.SetAttribute("MaxPackets", UintegerValue(maxPacketCount));
         client.SetAttribute("Interval", TimeValue(NanoSeconds(3)));
-        client.SetAttribute("PacketSize", UintegerValue(1100));
+        client.SetAttribute("PacketSize", UintegerValue(700));
         clientApps = client.Install(nodes.Get(src), dstNum);
         clientApps.Start(Seconds(start_time));
         clientApps.Stop(Seconds(stop_time));
 
-        for (int j = 0; j < dstNum; j++){
+        for (int j = 0; j < dstNum; j++)
+        {
             int dst;
             flowf >> dst;
+            // std::cout << "dst:" << dst << std::endl;
             dsts.push_back(dst);
             Ptr<Ipv4> ipv4 = nodes.Get(dst)->GetObject<Ipv4>();
-            serverAddress = ipv4->GetAddress(1, 0).GetLocal(); // GetAddress(0,0) is the loopback 127.0.0.1
+            serverAddress =
+                ipv4->GetAddress(1, 0).GetLocal(); // GetAddress(0,0) is the loopback 127.0.0.1
             UdpOrcaServerHelper server(clientAddress, port);
             ApplicationContainer serverApps = server.Install(nodes.Get(dst));
             serverApps.Start(Seconds(start_time));
@@ -146,7 +163,7 @@ int main(int argc, char* argv[])
         routing->addNewSession(port, src, dsts, "Orca");
     }
 
-    // std::cout<<"topolopy" << topolopy << std::endl; 
+    // std::cout<<"topolopy" << topolopy << std::endl;
 
     AsciiTraceHelper ascii;
     p2p.EnableAsciiAll(ascii.CreateFileStream("./output/test-czh.tr"));
@@ -154,6 +171,6 @@ int main(int argc, char* argv[])
 
     Simulator::Run();
     Simulator::Destroy();
-    std::cout<<"Simulator finished! " << std::endl; 
+    std::cout << "Simulator finished! " << std::endl;
     return 0;
 }

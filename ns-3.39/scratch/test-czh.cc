@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
         UdpOrcaClientHelper client(Ipv4Address("0.0.0.0"), port); // multicast address
         client.SetAttribute("MaxPackets", UintegerValue(maxPacketCount));
         client.SetAttribute("Interval", TimeValue(NanoSeconds(3)));
-        client.SetAttribute("PacketSize", UintegerValue(1100));
+        client.SetAttribute("PacketSize", UintegerValue(500));
         clientApps = client.Install(nodes.Get(src), dstNum);
         clientApps.Start(Seconds(start_time));
         clientApps.Stop(Seconds(stop_time));
@@ -142,9 +142,8 @@ int main(int argc, char* argv[])
             serverApps.Start(Seconds(start_time));
             serverApps.Stop(Seconds(stop_time));
         }
-        routing->addNewSession(port, src, dsts, "RSBF");
-        (*(routing->sessions))[i].mpacket = new MPacket( &(*(routing->sessions))[i]);
-        std::cout<<"mpacket "<< ( *(routing->sessions))[0].mpacket<<std::endl;
+        routing->addNewSession(port, src, dsts, "LIPSIN");
+        (*(routing->sessions))[i].lipsinPacket = new LIPSINPacket( &(*(routing->sessions))[i]);
     }
 
     // std::cout<<"topolopy" << topolopy << std::endl; 

@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
         UdpOrcaClientHelper client(Ipv4Address("0.0.0.0"), port); // multicast address
         client.SetAttribute("MaxPackets", UintegerValue(maxPacketCount));
         client.SetAttribute("Interval", TimeValue(NanoSeconds(3)));
-        client.SetAttribute("PacketSize", UintegerValue(1100));
+        client.SetAttribute("PacketSize", UintegerValue(600));
         clientApps = client.Install(nodes.Get(src), dstNum);
         clientApps.Start(Seconds(start_time));
         clientApps.Stop(Seconds(stop_time));

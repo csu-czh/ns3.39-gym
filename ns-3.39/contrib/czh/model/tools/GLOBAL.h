@@ -17,8 +17,8 @@
 #define SPINE_NUM 32
 #define LEAF_NUM 32
 #define HOST_PERLEAF_NUM 4
-#define BF_SIZE 800
-#define FATTREE_POD 8
+#define BF_SIZE 80
+#define FATTREE_POD 18
 #define ELMO_R 10
 typedef std::pair<int,int> PairII;
 

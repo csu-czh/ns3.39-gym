@@ -1,5 +1,5 @@
 Consolidate compiler generated dependencies of target libczh-obj
-config_path			./scratch/config/setting-czh.txt
+config_path			./scratch/config/setting.txt
 FLOW_FILE			./scratch/config/flow-czh.txt
 TOPOLOGY_FILE			./scratch/config/topology-czh.txt
 MAX_QUEUE_LEN			300000p
@@ -255126,7 +255126,7 @@ Finsh flowid : 10, Fct = 3320790 ns, Rate: 0.0578176 Gbps
 9 2
 39 5
 Process was interrupted by the user
-config_path			./scratch/config/setting-czh.txt
+config_path			./scratch/config/setting.txt
 FLOW_FILE			./scratch/config/flow-czh.txt
 TOPOLOGY_FILE			./scratch/config/topology-czh.txt
 MAX_QUEUE_LEN			300000p

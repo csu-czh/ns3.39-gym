@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
     int flowNum;
     
     cmd.Parse(argc, argv);
-    config_values = read_config("./scratch/config/setting-czh.txt");
+    config_values = read_config("./scratch/config/setting.txt");
     topof.open(config_values["TOPOLOGY_FILE"]);
     topof >> nodeNum >> linkNum;
     flowf.open(config_values["FLOW_FILE"]);

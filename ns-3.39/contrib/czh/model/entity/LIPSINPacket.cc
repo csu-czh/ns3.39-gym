@@ -98,11 +98,14 @@ LIPSINPacket::doForward(int nodeId, int interfaceId, Topolopy* topology, Session
     std::string link = std::to_string(nodea->id) + " to " + std::to_string(nodeb->id);
     bool forward = bf.VaryExist(link.c_str());
 
-    // if(forward == true && session->isPositiveLink(nodea->id,nodeb->id) == false){
-    //     static int errornum = 0;
-    //     errornum++;
-    //     // std::cout<<"error " << errornum << std::endl;
-    // }
+    if(forward == true && session->isPositiveLink(nodea->id,nodeb->id) == false){
+        if(erroredge.find(std::make_pair(nodea->id,nodeb->id)) == erroredge.end()){
+            erroredge.insert(std::make_pair(nodea->id,nodeb->id));
+            std::cout<<session->distance[nodea->id] <<" " << nodea->id << " " << nodeb->id<< std::endl;
+
+        }
+        
+    }
     return forward;
 }
 

@@ -39,6 +39,7 @@ Session::Session(int src, std::vector<int> dst, Topolopy* topolopy, std::string 
         isPostiveNode[start->id] = 1;
         std::cout << "isPostiveNode " << start->id << std::endl;
     }
+    int tmp = rand();
 
     while (!q.empty())
     {
@@ -47,7 +48,6 @@ Session::Session(int src, std::vector<int> dst, Topolopy* topolopy, std::string 
         // std::cout<<"now->id: "<<now->id<<std::endl;
         if (now->id == src)
             continue;
-        int tmp = rand();
         for (u_int32_t j = 0; j < now->linkedNodes.size(); j++)
         {
             // int x = j;

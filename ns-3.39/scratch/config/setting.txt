@@ -3,4 +3,4 @@ TOPOLOGY_FILE   ./scratch/config/topology.txt
 MAX_QUEUE_LEN    300000p
 DATA_RATE    2Gbps
 DELAY   5us
-POD_NUM 6
+POD_NUM 18
